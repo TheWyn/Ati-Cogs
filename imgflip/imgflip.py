@@ -4,6 +4,7 @@ from .utils.chat_formatting import box
 from .utils.dataIO import dataIO
 from .utils import checks
 import aiohttp
+import os
 
 class Imgflip:
 
