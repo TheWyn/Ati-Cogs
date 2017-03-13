@@ -1,0 +1,8 @@
+{
+    "AUTHOR" : "Atiwiex",
+    "DESCRIPTION" : "Allows you to order and make food.\nUse [p]order <insert food name here>\nExample: [p]order Pizza",
+    "SHORT" : "Order food from anywhere",
+    "DISABLED" : false,
+    "NAME" : "Discord Pizza",
+    "TAGS" : ["Food", "Pizza"]
+}
