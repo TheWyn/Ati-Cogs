@@ -2,7 +2,7 @@ from discord.ext import commands
 from requests import get 
 from json import loads 
 from collections import OrderedDict
-from Cogs.Utils.Discord import makeEmbed
+from cogs.Utils.Discord import makeEmbed
 
 
 class Scriptures:
