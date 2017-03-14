@@ -2,7 +2,6 @@ from discord.ext import commands
 from requests import get 
 from json import loads 
 from collections import OrderedDict
-from cogs.utils.discord import makeEmbed
 
 
 class Scriptures:
@@ -15,47 +14,48 @@ class Scriptures:
     def getBiblePassage(self, passage):
         '''Goes through the getbible api to get a list of applicable bible passages'''
         toRetrieveFrom = self.bible.format(passage)
-        data = get(toRetrieveFrom).content
-        strData = str(data)
-        realData = strData[3:-3] # Takes off some characters that shouldn't be there
-        jsonData = loads(realData)
-        return jsonData
-
+        data = get(toRetrieveFrom).text[1:-2]
+        return loads(data)
 
     @commands.command(aliases=['christianity', 'bible'])
     async def christian(self, *, passage:str):
-        '''Gets a passage from the bible
-        Usage :: christian luke 14:34
-              :: christian luke 14:34-36'''
+        '''
+        Gets a passage from the bible.
+        '''
 
+        # Get the passasges into a nice variable setup
+        chapter = []
+        sPassage = passage.split(' ')
+        while True:
+            if ':' in sPassage[0]:
+                break 
+            else:
+                chapter.append(sPassage[0])
+                del sPassage[0]
 
-        # Generate the string that'll be sent to the site
-        getString = passage
+        chapter = ' '.join(chapter)
+        passagesVerses = sPassage[0].split(':')
+        verse = passagesVerses[0]
+        passages = passagesVerses[1].replace(' ','').split('-')
+        if len(passages) == 1: passages = passages + passages
 
-        # Work out how many different quotes you need to get
-        tempPass = passage.split(':')[1]  # Gets the 34-35 from 14:34-35
-        if len(tempPass.split('-')) == 2:
-            passage = int(tempPass.split('-')[0])
-            lastpassage = int(tempPass.split('-')[1])
-        else:
-            passage = lastpassage = int(tempPass)
+        # So from here, luke 14:34-35 is split up as so:
+        #     chapter = 'luke'
+        #     passages = ['34', '35']
 
         # Actually go get all the data from the site
-        bibleData = self.getBiblePassage(getString)
+        bibleData = self.getBiblePassage(passage)
 
         # Get the nice passages and stuff
-        passageReadings = OrderedDict()
-        chapterName = bibleData['book'][0]['book_name']
-        chapterPassages = bibleData['book'][0]['chapter']
-        chapterNumber = bibleData['book'][0]['chapter_nr']
-        for i in range(passage, lastpassage + 1):
-            passageReadings['{}:{}'.format(chapterNumber, i)] = chapterPassages[str(i)]['verse']
+        bookName = bibleData['book'][0]['book_name']
+        verses = bibleData['book'][0]['chapter']
+        listedVerses = [(i['verse_nr'], i['verse']) for i in verses.values()]
+        '''[('34', 'Salt is good'), ('35', 'Beef is bad')]'''
 
-        # Make it into an embed
-        em = makeEmbed(values=passageReadings, icon=self.biblePicture, name=chapterName)
+        # I can't be bothered to improve it from here so you'll have to embed and respond yourself.
 
         # Boop it to the user
-        await self.bot.say('', embed=em)
+        await self.bot.say('God did some stuff.')
 
 
 def setup(bot):
