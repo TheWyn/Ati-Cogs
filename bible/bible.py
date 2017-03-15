@@ -1,3 +1,4 @@
+from discord import Embed
 from discord.ext import commands 
 from requests import get 
 from json import loads 
@@ -52,10 +53,27 @@ class Scriptures:
         listedVerses = [(i['verse_nr'], i['verse']) for i in verses.values()]
         '''[('34', 'Salt is good'), ('35', 'Beef is bad')]'''
 
-        # I can't be bothered to improve it from here so you'll have to embed and respond yourself.
+        # Order the list properly
+        passageInt = sorted([int(i) for i in passages])
+        sortedVerses = []
+        i = passageInt[0]
+        while i < passageInt[1] + 1:
+            q = [w for w in listedVerses if w[0] == str(i)]
+            sortedVerses.append(q[0])
+            i += 1
+
+        # Embed it
+        embeddableDict = OrderedDict()
+        for i in sortedVerses:
+            embeddableDict[i[0]] = i[1]
+
+        em = Embed()
+        em.set_author(name=bookName, icon_url=self.biblePicture)
+        for i, o in embeddableDict.items():
+            em.add_field(name=i, value=o, inline=False)
 
         # Boop it to the user
-        await self.bot.say('God did some stuff.')
+        await self.bot.say('', embed=em)
 
 
 def setup(bot):
