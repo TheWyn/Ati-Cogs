@@ -50,7 +50,7 @@ class Imgflip:
 
     @commands.command(pass_context=True)
     async def meme(self, ctx, *, memeText:str):
-    """ Pulls a custom meme from imgflip"""
+        """ Pulls a custom meme from imgflip"""
 
     # msg example = [image_id, top_text, bottom_text] as string
     msg = memeText.split(";")
