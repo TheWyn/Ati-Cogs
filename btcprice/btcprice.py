@@ -23,7 +23,7 @@ class BTC:
         await self.bot.say(resp.text + '')
         
     @commands.command(pass_context=True)
-    async def totalbc(self, ctx):
+    async def totalbtc(self, ctx):
         """Shows the amount of Bitcoin."""
         url = 'https://blockchain.info/q/totalbc'
         resp = requests.get(url)
