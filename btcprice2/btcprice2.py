@@ -16,7 +16,7 @@ class BTC:
         await self.bot.say(btc['symbol'] + '' + str(btc['last']))
 
     @commands.command(pass_context=True)
-    async def unconfirmedcount(self, ctx, currency:str):
+    async def unconfirmedcount(self, ctx):
         """Shows the amount of unconfirmed transactions."""
         url = 'https://blockchain.info/q/unconfirmedcount'
         resp = requests.get(url)
