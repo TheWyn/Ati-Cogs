@@ -20,8 +20,7 @@ class BTC:
         """Shows the amount of unconfirmed transactions."""
         url = 'https://blockchain.info/q/unconfirmedcount'
         resp = requests.get(url)
-        btc = resp.json()[currency]
-        await self.bot.say(btc['symbol'] + '' + str(btc['last']))
+        await self.bot.say(['symbol'] + '' + str(['last']))
 
 def setup(bot):
     n = BTC(bot)
