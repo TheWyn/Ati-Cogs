@@ -23,14 +23,14 @@ class BTC:
         await self.bot.say(resp.text + '')
         
     @commands.command(pass_context=True)
-    async def totalbc(self, ctx, currency:str):
+    async def totalbc(self, ctx):
         """Shows the amount of Bitcoin."""
         url = 'https://blockchain.info/q/totalbc'
         resp = requests.get(url)
         await self.bot.say(resp.text + '')
 
     @commands.command(pass_context=True)
-    async def hrprice(self, ctx, currency:str):
+    async def hrprice(self, ctx):
         """Shows the amount of Bitcoin."""
         url = 'https://blockchain.info/q/24hrprice'
         resp = requests.get(url)
