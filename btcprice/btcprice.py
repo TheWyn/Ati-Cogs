@@ -43,6 +43,13 @@ class BTC:
         resp = requests.get(url)
         await self.bot.say(resp.text + '')
         
+    @commands.command(pass_context=True)
+    async def inwallet(self, ctx, adress:str):
+        """Shows the amount of Bitcoin in a wallet."""
+        url = 'https://blockchain.info/q/addressbalance'
+        resp = requests.get(url)
+        await self.bot.say(resp.text + '')
+        
 def setup(bot):
     n = BTC(bot)
     bot.add_cog(n)
