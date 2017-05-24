@@ -15,6 +15,14 @@ class BTC:
         btc = resp.json()[currency]
         await self.bot.say(btc['symbol'] + '' + str(btc['last']))
 
+    @commands.command(pass_context=True)
+    async def unconfirmedcount(self, ctx, currency:str):
+        """Shows the amount of unconfirmed transactions."""
+        url = 'https://blockchain.info/q/unconfirmedcount'
+        resp = requests.get(url)
+        btc = resp.json()[currency]
+        await self.bot.say(btc['symbol'] + '' + str(btc['last']))
+        
 def setup(bot):
     n = BTC(bot)
     bot.add_cog(n)
