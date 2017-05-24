@@ -51,9 +51,12 @@ class Imgflip:
     @commands.command(pass_context=True)
     async def meme(self, ctx, *, memeText:str):
         """ Pulls a custom meme from imgflip"""
+
+        # msg example = [image_id, top_text, bottom_text] as string
         msg = memeText.split(";")
-        prefix = self.get_prefix(ctx.message.server, ctx.message.content)
         if len(msg) == 3:
+
+            # I assume you're checking against imgflip's character limit here
             if len(msg[0]) > 1 and len([msg[1]]) < 20 and len([msg[2]]) < 20:
                 username = self.settings["IMGFLIP_USERNAME"]
                 password = self.settings["IMGFLIP_PASSWORD"]
@@ -62,26 +65,33 @@ class Imgflip:
                 text2 = msg[2]
                 if not meme.isdigit():
                     meme = await self.get_meme_id(meme)
+
+                # Format the url
                 url = self.url.format(meme, username, password, text1, text2)
+
+                # Get the URL
                 try:
                     async with aiohttp.get(url) as r:
                         result = await r.json()
                     if result["data"] != []:
                         url = result["data"]["url"]
                         await self.bot.say(url)
-                except:
-                    await self.bot.process_commands("getmemes")
-            else:
-                await self.bot.process_commands("getmemes")
-        else:
-            await self.bot.process_commands("getmemes")
 
-    def get_prefix(self, server, msg):
-        prefixes = self.bot.settings.get_prefixes(server)
-        for p in prefixes:
-            if msg.startswith(p):
-                return p
-        return None
+                        # And now you're done
+                        return
+
+                except Exception:
+
+                    # If you get here, something went wrong with the web request
+                    await self.bot.say('fuck me')
+            else:
+
+                # If you get here, you hit the character limit
+                await self.bot.say('fuck you')
+        else:
+
+            # If you get to here, you've used more than two semicolons
+            await self.bot.say('fuck you')
 
     @commands.group(pass_context=True, name='imgflipset')
     @checks.admin_or_permissions(manage_server=True)
