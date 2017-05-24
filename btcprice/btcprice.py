@@ -24,21 +24,21 @@ class BTC:
         
     @commands.command(pass_context=True)
     async def totalbtc(self, ctx):
-        """Shows the amount of Bitcoin."""
+        """Shows the total amount of Bitcoin."""
         url = 'https://blockchain.info/q/totalbc'
         resp = requests.get(url)
         await self.bot.say(resp.text + '')
 
     @commands.command(pass_context=True)
     async def hrprice(self, ctx):
-        """Shows the amount of Bitcoin."""
+        """Shows the 24 hour price."""
         url = 'https://blockchain.info/q/24hrprice'
         resp = requests.get(url)
         await self.bot.say(resp.text + '')
         
     @commands.command(pass_context=True)
     async def hrcount(self, ctx):
-        """Shows the amount of Bitcoin."""
+        """Shows the 24hr transactioncount."""
         url = 'https://blockchain.info/q/24hrtransactioncount'
         resp = requests.get(url)
         await self.bot.say(resp.text + '')
