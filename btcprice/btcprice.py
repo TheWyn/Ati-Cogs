@@ -44,7 +44,7 @@ class BTC:
         await self.bot.say(resp.text + '')
         
     @commands.command(pass_context=True)
-    async def inwallet(self, ctx, adress:str):
+    async def inwallet(self, ctx, adress):
         """fetches the price of btc in a currency."""
         url = 'https://blockchain.info/q/addressbalance'
         resp = requests.get(url)
