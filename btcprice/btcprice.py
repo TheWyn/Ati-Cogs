@@ -48,8 +48,7 @@ class BTC:
         """fetches the price of btc in a currency."""
         url = 'https://blockchain.info/q/addressbalance'
         resp = requests.get(url)
-        btc = resp.json()[adress]
-        await self.bot.say(btc + '')
+        await self.bot.say(resp + '')
         
 def setup(bot):
     n = BTC(bot)
