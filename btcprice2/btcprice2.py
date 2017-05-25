@@ -14,7 +14,7 @@ class BTC:
         url = 'https://blockchain.info/ticker'
         async with self.session.get(url) as resp:
             temp = await resp.json()
-        btc = temp.json()[currency]
+        btc = temp[currency]
         await self.bot.say(btc['symbol'] + '' + str(btc['last']))
 
     @commands.command(pass_context=True)
