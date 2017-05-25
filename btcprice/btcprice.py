@@ -1,54 +1,54 @@
 import discord
 from discord.ext import commands
-import requests
+import aiohttp
 
 class BTC:
 
     def __init__(self, bot):
         self.bot = bot
+        self.session = aiohttp.ClientSession(loop=bot.loop)
 
     @commands.command(pass_context=True)
     async def currency(self, ctx, currency:str):
         """fetches the price of btc in a currency."""
         url = 'https://blockchain.info/ticker'
-        resp = requests.get(url)
-        btc = resp.json()[currency]
+        async with self.session.get(url) as resp:
+            temp = await resp.json()
+        btc = temp[currency]
         await self.bot.say(btc['symbol'] + '' + str(btc['last']))
 
     @commands.command(pass_context=True)
     async def unconf(self, ctx):
         """Shows the amount of unconfirmed transactions."""
         url = 'https://blockchain.info/q/unconfirmedcount'
-        resp = requests.get(url)
-        await self.bot.say(resp.text + '')
+        async with self.session.get(url) as resp:
+            text = await resp.text()
+        await self.bot.say(text)
         
     @commands.command(pass_context=True)
     async def totalbtc(self, ctx):
         """Shows the total amount of Bitcoin."""
         url = 'https://blockchain.info/q/totalbc'
-        resp = requests.get(url)
-        await self.bot.say(resp.text + '')
+        async with self.session.get(url) as resp:
+            text = await resp.text()
+        await self.bot.say(text)
 
     @commands.command(pass_context=True)
     async def hrprice(self, ctx):
         """Shows the 24 hour price."""
         url = 'https://blockchain.info/q/24hrprice'
-        resp = requests.get(url)
-        await self.bot.say(resp.text + '')
+        async with self.session.get(url) as resp:
+            text = await resp.text()
+        await self.bot.say(text)
         
     @commands.command(pass_context=True)
     async def hrcount(self, ctx):
         """Shows the 24hr transactioncount."""
         url = 'https://blockchain.info/q/24hrtransactioncount'
-        resp = requests.get(url)
-        await self.bot.say(resp.text + '')
-        
-    @commands.command(pass_context=True)
-    async def inwallet(self, ctx, adress):
-        """fetches the price of btc in a currency."""
-        url = 'https://blockchain.info/q/addressbalance'
-        resp = requests.get(url)
-        await self.bot.say(resp + '')
+        async with self.session.get(url) as resp:
+            text = await resp.text()
+        await self.bot.say(text)
+
         
 def setup(bot):
     n = BTC(bot)
