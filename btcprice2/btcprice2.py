@@ -52,4 +52,4 @@ class BTC:
         
 def setup(bot):
     n = BTC(bot)
-bot.add_cog(n)
+    bot.add_cog(n)
