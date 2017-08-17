@@ -5,8 +5,9 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 import asyncio, aiohttp, io, time, imghdr, os, json
+from __main__ import send_cmd_help
 
-class Fun:
+class CowSay:
     """
     Commands that are used for fun.
     """
@@ -19,7 +20,7 @@ class Fun:
         """A speaking/thinking cow"""
         print(ctx.message.content)
         if ctx.invoked_subcommand is None:
-            return await self.bot.say('Invalid amount of arguments passed.')
+            await send_cmd_help(ctx)
 
     def _box_text(self, text : str):
         """ Convert text into a box of fixedwidth text. """
@@ -100,4 +101,4 @@ class Fun:
             return [ "|", "|" ]
 
 def setup(bot):
-    bot.add_cog(Fun(bot))
+    bot.add_cog(CowSay(bot))
