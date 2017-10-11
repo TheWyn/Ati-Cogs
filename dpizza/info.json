@@ -5,4 +5,5 @@
     "DISABLED" : false,
     "NAME" : "Discord Pizza",
     "TAGS" : ["Food", "Pizza"]
+    "HIDDEN" : true
 }
