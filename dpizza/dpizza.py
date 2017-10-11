@@ -3,7 +3,7 @@ from discord.ext import commands
 from random import randint
 
 
-orderChannel = Object('266684197970640897')  # <---- place the chanenl ID there
+orderChannel = Object('266684197970640897')  # <---- place the channel ID there
 orders = {}
 orderMessage = '''
 Something something Discord Pizza sucks.
