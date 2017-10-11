@@ -73,7 +73,7 @@ class Scriptures:
             em.add_field(name=i, value=o, inline=False)
 
         # Boop it to the user
-        await self.bot.say('', embed=em)
+        await self.bot.say(embed=em)
 
 
 def setup(bot):
