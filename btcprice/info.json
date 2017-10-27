@@ -1,7 +1,7 @@
 {
     "AUTHOR" : "Atiwiex",
-    "DESCRIPTION" : "Gives the price of btc in 22 currencys.\nThe currency must be in captial letters\nExample: [p]Currency USD",
-    "SHORT" : "Get the price of BTC in 22 currencys.",
+    "DESCRIPTION" : "Gives the price of btc in 22 currencies.\nThe currency must be in captial letters\nExample: [p]Currency USD",
+    "SHORT" : "Get the price of BTC in 22 currencies.",
     "DISABLED" : false,
     "NAME" : "BTCprice",
     "TAGS" : ["BTC", "Money", "USD"]
