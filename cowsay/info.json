@@ -1,0 +1,8 @@
+{
+    "AUTHOR" : "Atiwiex",
+    "DESCRIPTION" : "Cow output.\nExample: [p]cow say <text>, [p]cow think <text>\n",
+    "SHORT" : "Say or think things with a cow.",
+    "DISABLED" : false,
+    "NAME" : "cowsay",
+    "TAGS" : ["cow", "cowsay"]
+}

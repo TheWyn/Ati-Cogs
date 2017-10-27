@@ -1,0 +1,8 @@
+{
+    "AUTHOR" : "Atiwiex",
+    "DESCRIPTION" : "Fetch bible verses.\nExample: [p]bible John 3:16",
+    "SHORT" : "Fetch bible verses.",
+    "DISABLED" : false,
+    "NAME" : "Bible",
+    "TAGS" : ["bible", "verse"]
+}
