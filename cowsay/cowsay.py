@@ -15,13 +15,6 @@ class CowSay:
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.group(pass_context=True)
-    async def cow(self, ctx):
-        """A speaking/thinking cow"""
-        print(ctx.message.content)
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
-
     def _box_text(self, text : str):
         """ Convert text into a box of fixedwidth text. """
 
@@ -31,14 +24,14 @@ class CowSay:
         text_boxed = '```txt\n{0}```'.format(text_sanitised)
         return text_boxed
 
-    @cow.command()
-    async def think(self, *, message : str):
+    @commands.command()
+    async def cowthink(self, *, message : str):
         cow = self.build_box(message, 40) + self.build_thinkcow()
 
         return await self.bot.say(self._box_text(cow))
 
-    @cow.command()
-    async def say(self, *, message : str):
+    @commands.command()
+    async def cowsay(self, *, message : str):
         cow = self.build_box(message, 40) + self.build_saycow()
 
         return await self.bot.say(self._box_text(cow))
