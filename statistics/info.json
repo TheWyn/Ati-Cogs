@@ -1,0 +1,8 @@
+{
+    "AUTHOR" : "Paddolicious#8880, William#0660",
+    "NAME" : "Statistics",
+    "SHORT" : "Keeps track of statistics",
+    "DESCRIPTION" : "Keeps track of statistics, and gives the ability to have it update in a channel of your choice. Made by Paddolicious#8880, updated by William#0660.",
+    "REQUIREMENTS" : ["psutil"],
+    "TAGS": ["statistics", "tracking", "status"]
+}
