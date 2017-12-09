@@ -46,7 +46,7 @@ class Music:
         """Stop playback."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
         if player.is_playing():
-            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, description="Stopping...")
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Stopping...")
             await ctx.send(embed=embed)
             await player.stop()
         else:
