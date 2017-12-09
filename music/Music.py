@@ -6,7 +6,7 @@ from . import lavalink
 class Music:
     def __init__(self, bot):
         self.bot = bot
-        self.lavalink = lavalink.Client(bot=bot, shard_count=len(self.bot.shards), user_id=self.bot.user.id, password='youshallnotpass', loop=self.bot.loop)
+        self.lavalink = lavalink.Client(bot=bot, password='youshallnotpass', loop=self.bot.loop)
 
         self.state_keys = {}
         self.validator = ['op', 'guildId', 'sessionId', 'event']
@@ -44,7 +44,13 @@ class Music:
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
         song = 'Nothing'
         if player.current:
-            song = player.current.title
+            pos = lavalink.Utils.format_time(player.position)
+            if player.current.stream:
+                dur = 'LIVE'
+            else:
+                dur = lavalink.Utils.format_time(player.current.duration)
+            song = f'**[{player.current.title}]({player.current.uri})**\n({pos}/{dur})'
+
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Now Playing', description=song)
         await ctx.send(embed=embed)
 
@@ -58,6 +64,11 @@ class Music:
 
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Queue', description=queue_list)
         await ctx.send(embed=embed)
+    
+    @commands.command()
+    async def disconnect(self, ctx):
+        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
+        await player.disconnect()
 
     async def on_voice_server_update(self, data):
         self.state_keys.update({
