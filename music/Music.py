@@ -75,18 +75,14 @@ class Music:
         dur = player.current.duration
         sections = 12
         loc_time = round((pos / dur) * sections)  # 10 sections
-
         bar = ':white_small_square:'
         seek = ':small_blue_diamond:'
-
         msg = "|"
-
         for i in range(sections):
             if i == loc_time:
                 msg += seek
             else:
                 msg += bar
-
         msg += "|"
         return msg
 
