@@ -46,7 +46,8 @@ class Player:
         self.is_connected = lambda: self.channel_id is not None
         self.is_playing = lambda: self.current is not None
 
-        self.state = None
+        self.position = 0
+        self.position_timestamp = 0
 
         self.queue = []
         self.current = None
@@ -59,6 +60,20 @@ class Player:
         }
         await self.client.send(payload)
         self.channel_id = str(channel_id)
+    
+    async def disconnect(self):
+        if not self.is_connected():
+            return
+
+        if self.is_playing():
+            await self.stop()
+
+        payload = {
+            'op': 'disconnect',
+            'guildId': self.guild_id
+        }
+        await self.client.send(payload)
+        self.channel_id = None
 
     async def add(self, requester, track, play=False):
         await self._build_track(requester, track)
@@ -96,6 +111,7 @@ class Player:
         await self.play()
 
     async def _on_track_end(self, data):
+        self.position = 0
         if data.get('reason') == 'FINISHED':
             await self.play()
 
@@ -127,17 +143,17 @@ class Player:
 
 
 class Client:
-    def __init__(self, bot, shard_count, user_id, password='', host='localhost', port=80, rest=2333, loop=asyncio.get_event_loop()):
+    def __init__(self, bot, password='', host='localhost', port=80, rest=2333, loop=asyncio.get_event_loop()):
         self.bot = bot
 
         if not hasattr(self.bot, 'players'):
             self.bot.players = {}
 
         self.loop = loop
-        self.shard_count = shard_count
-        self.user_id = user_id
+        self.shard_count = len(self.bot.shards) if hasattr(self.bot, 'shards') else 1
+        self.user_id = self.bot.user.id
         self.password = password
-        self.host = '35.192.43.219'
+        self.host = host
         self.port = port
         self.rest = rest
         self.uri = f'ws://{host}:{port}'
@@ -172,7 +188,8 @@ class Client:
                     await self.bot._connection._get_websocket(330777295952543744).send(j.get('message'))  # todo: move this to play (voice updates)
                 elif j.get('op') == 'event':
                     await self._dispatch_event(j)
-                # elif j.get('op') == 'playerUpdate':
+                elif j.get('op') == 'playerUpdate':
+                    await self._update_state(j)
 
     async def _dispatch_event(self, data):
         t = data.get('type')
@@ -198,6 +215,20 @@ class Client:
             }
             await self.send(payload)
 
+    async def _update_state(self, data):
+        g = int(data.get('guildId'))
+
+        if g not in self.bot.players:
+            return
+
+        p = self.bot.players[g]
+
+        if not p.is_playing():
+            return
+
+        p.position = data['state'].get('position', 0)
+        p.position_timestamp = data['state'].get('time', 0)
+
     async def _validate_shard(self, data):
         payload = {
             'op': 'isConnectedRes',
@@ -207,7 +238,7 @@ class Client:
         await self.send(payload)
 
     async def send(self, data):
-        if not self.ws:
+        if not hasattr(self, 'ws') or not self.ws.open:
             return
         payload = json.dumps(data)
         await self.ws.send(payload)
@@ -227,5 +258,18 @@ class Client:
             'Authorization': self.password,
             'Accept': 'application/json'
         }
-        return await self.requester.get(url=f'http://{self.host}:{self.rest}/loadtracks?identifier={query}',
-                                        jsonify=True, headers=headers)
+        return await self.requester.get(url=f'http://{self.host}:{self.rest}/loadtracks?identifier={query}', jsonify=True, headers=headers)
+        # data = {
+        #     'is_search': any(s in query for s in ['ytsearch', 'scsearch']),
+        #     'results': tracks
+        # }
+        # return data
+
+class Utils:
+
+    @staticmethod
+    def format_time(time):
+        seconds = (time / 1000) % 60
+        minutes = (time / (1000 * 60)) % 60
+        hours = (time / (1000 * 60 * 60)) % 24
+        return "%02d:%02d:%02d" % (hours, minutes, seconds)
