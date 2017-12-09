@@ -13,6 +13,7 @@ class Music:
 
     @commands.command(aliases=['p'])
     async def play(self, ctx, *, query):
+        """Play a URL."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
 
         if not player.is_connected():
@@ -36,11 +37,13 @@ class Music:
 
     @commands.command(aliases=['forceskip', 'fs'])
     async def skip(self, ctx):
+        """Skip to the next track."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
         await player.skip()
 
     @commands.command(aliases=['s'])
     async def stop(self, ctx):
+        """Stop playback."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
         if player.is_playing():
             embed = discord.Embed(colour=ctx.guild.me.top_role.colour, description="Stopping...")
@@ -51,6 +54,7 @@ class Music:
 
     @commands.command(aliases=['np', 'n'])
     async def now(self, ctx):
+        """Now playing."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
         song = 'Nothing'
         if player.current:
@@ -88,6 +92,7 @@ class Music:
 
     @commands.command(aliases=['q'])
     async def queue(self, ctx):
+        """Lists the queue."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
 
         queue_list = 'Nothing queued' if not player.queue else ''
@@ -99,6 +104,7 @@ class Music:
     
     @commands.command()
     async def disconnect(self, ctx):
+        """Disconnect from the voice channel."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
         await player.disconnect()
 
