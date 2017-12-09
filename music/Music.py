@@ -39,6 +39,16 @@ class Music:
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
         await player.skip()
 
+    @commands.command(aliases=['s'])
+    async def stop(self, ctx):
+        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
+        if player.is_playing():
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, description="Stopping...")
+            await ctx.send(embed=embed)
+            await player.stop()
+        else:
+            pass
+
     @commands.command(aliases=['np', 'n'])
     async def now(self, ctx):
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
