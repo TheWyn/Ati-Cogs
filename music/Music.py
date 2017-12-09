@@ -44,15 +44,37 @@ class Music:
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
         song = 'Nothing'
         if player.current:
+            arrow = await self._draw_time(ctx)
             pos = lavalink.Utils.format_time(player.position)
             if player.current.stream:
                 dur = 'LIVE'
             else:
                 dur = lavalink.Utils.format_time(player.current.duration)
-            song = f'**[{player.current.title}]({player.current.uri})**\n({pos}/{dur})'
+        song = f'**[{player.current.title}]({player.current.uri})**\n{arrow}\n({pos}/{dur})'
 
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Now Playing', description=song)
         await ctx.send(embed=embed)
+
+    async def _draw_time(self, ctx):
+        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
+        pos = player.position
+        dur = player.current.duration
+        sections = 12
+        loc_time = round((pos / dur) * sections)  # 10 sections
+
+        bar = ':white_small_square:'
+        seek = ':small_blue_diamond:'
+
+        msg = "|"
+
+        for i in range(sections):
+            if i == loc_time:
+                msg += seek
+            else:
+                msg += bar
+
+        msg += "|"
+        return msg
 
     @commands.command(aliases=['q'])
     async def queue(self, ctx):
@@ -89,3 +111,4 @@ class Music:
         if all(k in self.state_keys for k in self.validator):
             await self.lavalink.dispatch_voice_update(self.state_keys)
             self.state_keys.clear()
+
