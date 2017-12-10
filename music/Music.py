@@ -67,6 +67,20 @@ class Music:
         await ctx.send(embed=embed)
         await player.skip()
 
+    @commands.command()
+    async def shuffle(self, ctx):
+        """Toggles shuffle."""
+        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
+
+        if not player.is_playing():
+            return await ctx.send('Nothing playing.')
+
+        player.shuffle = not player.shuffle
+        
+        phrase = ('Shuffle ' + ('enabled!' if player.shuffle else 'disabled.'))
+        embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title=phrase)
+        await ctx.send(embed=embed)
+
     @commands.command(aliases=['s'])
     async def stop(self, ctx):
         """Stops playback."""
