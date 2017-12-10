@@ -254,7 +254,9 @@ class Music:
         message = await ctx.send(embed=embed)
         await player.skip()
         await asyncio.sleep(1)
-        await ctx.invoke(self.now)
+        song = f'**[{player.current.title}]({player.current.uri})**'
+        nextembed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Now Playing', description=song)
+        await message.edit(embed=nextembed)
 
     @commands.command(aliases=['s'])
     async def stop(self, ctx):
