@@ -253,8 +253,8 @@ class Music:
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Skipping...")
         message = await ctx.send(embed=embed)
         await player.skip()
-        now_playing = await ctx.invoke(self.now)
-        await message.edit(content=now_playing)
+        await asyncio.sleep(1)
+        await ctx.invoke(self.now)
 
     @commands.command(aliases=['s'])
     async def stop(self, ctx):
