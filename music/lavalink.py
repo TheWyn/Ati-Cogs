@@ -62,7 +62,7 @@ class Player:
         }
         await self.client.send(payload)
         self.channel_id = str(channel_id)
-    
+
     async def disconnect(self):
         if not self.is_connected():
             return
@@ -82,13 +82,6 @@ class Player:
 
         if play and not self.is_playing():
             await self.play()
-
-
-
-
-
-
-
 
     async def play(self):
         if not self.is_connected() or not self.queue:
@@ -127,14 +120,14 @@ class Player:
         }
         await self.client.send(payload)
         self.paused = pause
-    
+
     async def set_volume(self, vol):
         if vol < 0:
             vol = 0
-        
+
         if vol > 150:
             vol = 150
-        
+
         payload = {
             'op': 'volume',
             'guildId': self.guild_id,
@@ -143,7 +136,7 @@ class Player:
         await self.client.send(payload)
         self.volume = vol
         return vol
-    
+
     async def seek(self, pos):
         payload = {
             'op': 'seek',
@@ -206,11 +199,6 @@ class Client:
         asyncio.ensure_future(self._connect())
 
     async def _connect(self):
-
-
-
-
-
         try:
             headers = {
                 'Authorization': self.password,
@@ -222,9 +210,6 @@ class Client:
             print("[Lavalink.py] Established connection to lavalink")
         except OSError:
             print('[Lavalink.py] Failed to connect to lavalink')
-
-
-
 
     async def _listen(self):
         try:
@@ -252,7 +237,7 @@ class Client:
                 await self._connect()
                 if self.ws.open:
                     return
-            
+
             print('[Lavalink.py] Failed to re-establish a connection with lavalink.')
 
     async def _dispatch_event(self, data):
@@ -286,7 +271,6 @@ class Client:
             return
 
         p = self.bot.players[g]
-
 
         if not p.is_playing():
             return
@@ -329,6 +313,7 @@ class Client:
         #     'results': tracks
         # }
         # return data
+
 
 class Utils:
 
