@@ -1,3 +1,4 @@
+import asyncio
 import discord
 from discord.ext import commands
 from . import lavalink
@@ -11,9 +12,12 @@ class Music:
         self.state_keys = {}
         self.validator = ['op', 'guildId', 'sessionId', 'event']
 
+    async def _stopping(self, ctx):
+        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
+
     @commands.command(aliases=['p'])
     async def play(self, ctx, *, query):
-        """Play a URL."""
+        """Play a URL or search for a song."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
 
         if not player.is_connected():
@@ -26,7 +30,7 @@ class Music:
 
         tracks = await self.lavalink.get_tracks(query)
         if not tracks:
-            return await ctx.send('Nothing found 👀')
+            return await ctx.send('Nothing found ??')
 
         await player.add(requester=ctx.author.id, track=tracks[0], play=True)
 
@@ -35,15 +39,31 @@ class Music:
                               description=f'[{tracks[0]["info"]["title"]}]({tracks[0]["info"]["uri"]})')
         await ctx.send(embed=embed)
 
+    @commands.command(aliases=["resume"])
+    async def pause(self, ctx):
+        """Pause and resume."""
+        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
+
+        if not player.is_playing():
+            return
+        if player.paused:
+            await player.set_paused(False)
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Music resumed.")
+            await ctx.send(embed=embed)
+        else:
+            await player.set_paused(True)
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Music paused.")
+            await ctx.send(embed=embed)
+
     @commands.command(aliases=['forceskip', 'fs'])
     async def skip(self, ctx):
-        """Skip to the next track."""
+        """Skips to the next track."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
         await player.skip()
 
     @commands.command(aliases=['s'])
     async def stop(self, ctx):
-        """Stop playback."""
+        """Stops playback."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
         if player.is_playing():
             embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Stopping...")
@@ -52,9 +72,32 @@ class Music:
         else:
             pass
 
-    @commands.command(aliases=['np', 'n'])
+    @commands.command(aliases=['vol'])
+    async def volume(self, ctx, volume):
+        """Sets the volume, 1 - 100."""
+        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
+
+        if not player.is_playing():
+            return
+
+        if not lavalink.Utils.is_number(volume):
+            return await ctx.send('You didn\'t specify a valid number!')
+
+        await player.set_volume(int(volume))
+        embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Volume:", description=volume)
+        await ctx.send(embed=embed)
+
+    @commands.command(aliases=['np', 'n', 'song'])
     async def now(self, ctx):
         """Now playing."""
+        expected = ["?", "?", "?", "?", "?"]
+        emoji = {
+            "back": "?",
+            "stop": "?",
+            "pause": "?",
+            "play": "?",
+            "next": "?"
+        }
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
         song = 'Nothing'
         if player.current:
@@ -64,10 +107,50 @@ class Music:
                 dur = 'LIVE'
             else:
                 dur = lavalink.Utils.format_time(player.current.duration)
-        song = f'**[{player.current.title}]({player.current.uri})**\n{arrow}\n({pos}/{dur})'
+        if not player.current:
+            song = f'Nothing.'
+        else:
+            song = f'**[{player.current.title}]({player.current.uri})**\n{arrow}\n({pos}/{dur})'
 
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Now Playing', description=song)
-        await ctx.send(embed=embed)
+        message = await ctx.send(embed=embed)
+
+        def check(r, u):
+            return r.message.id == message.id and u == ctx.message.author
+
+        if player.current:
+            for i in range(5):
+                await message.add_reaction(expected[i])
+        try:
+            (r, u) = await self.bot.wait_for('reaction_add', check=check, timeout=10.0)
+        except asyncio.TimeoutError:
+            await self._clear_react(message)
+            return
+
+        reacts = {v: k for k, v in emoji.items()}
+        react = reacts[r.emoji]
+
+        if react == "back":
+            await self._clear_react(message)
+            pass
+        elif react == "stop":
+            await self._clear_react(message)
+            await ctx.invoke(self.stop)
+        elif react == "pause":
+            await self._clear_react(message)
+            await ctx.invoke(self.pause)
+        elif react == "play":
+            await self._clear_react(message)
+            await ctx.invoke(self.resume)
+        elif react == "next":
+            await self._clear_react(message)
+            await ctx.invoke(self.skip)
+        
+    async def _clear_react(self, message):
+        try:
+            await message.clear_reactions()
+        except:
+            return
 
     async def _draw_time(self, ctx):
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
@@ -97,8 +180,8 @@ class Music:
 
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Queue', description=queue_list)
         await ctx.send(embed=embed)
-    
-    @commands.command()
+
+    @commands.command(aliases=['dc'])
     async def disconnect(self, ctx):
         """Disconnect from the voice channel."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
@@ -123,4 +206,3 @@ class Music:
         if all(k in self.state_keys for k in self.validator):
             await self.lavalink.dispatch_voice_update(self.state_keys)
             self.state_keys.clear()
-
