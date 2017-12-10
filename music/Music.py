@@ -1,5 +1,6 @@
 import asyncio
 import discord
+import math
 from discord.ext import commands
 from . import lavalink
 
@@ -28,12 +29,18 @@ class Music:
         tracks = await self.lavalink.get_tracks(query)
         if not tracks:
             return await ctx.send('Nothing found 👀')
+        if 'list' in query and 'ytsearch:' not in query:
+            for track in tracks:
+                await player.add(requester=ctx.author.id, track=track, play=True)
 
-        await player.add(requester=ctx.author.id, track=tracks[0], play=True)
-
-        embed = discord.Embed(colour=ctx.guild.me.top_role.colour,
-                              title="Track Enqueued",
-                              description=f'[{tracks[0]["info"]["title"]}]({tracks[0]["info"]["uri"]})')
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour,
+                                  title="Playlist Enqueued!",
+                                  description=f"Imported {len(tracks)} tracks from the playlist :)")
+        else:
+            await player.add(requester=ctx.author.id, track=tracks[0], play=True)
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour,
+                                  title="Track Enqueued",
+                                  description=f'[{tracks[0]["info"]["title"]}]({tracks[0]["info"]["uri"]})')
         await ctx.send(embed=embed)
 
     @commands.command(aliases=["resume"])
@@ -56,6 +63,8 @@ class Music:
     async def skip(self, ctx):
         """Skips to the next track."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
+        embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Skipping...")
+        await ctx.send(embed=embed)
         await player.skip()
 
     @commands.command(aliases=['s'])
@@ -70,15 +79,22 @@ class Music:
             pass
 
     @commands.command(aliases=['vol'])
-    async def volume(self, ctx, volume):
+    async def volume(self, ctx, volume=None):
         """Sets the volume, 1 - 100."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
 
+        if not volume:
+            vol = player.volume
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Volume: ", description=str(vol) + "%")
+            return await ctx.send(embed=embed)
+
         if not player.is_playing():
-            return
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Nothing playing.")
+            return await ctx.send(embed=embed)
 
         if not lavalink.Utils.is_number(volume):
-            return await ctx.send('You didn\'t specify a valid number!')
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="You didn\'t specify a valid number!")
+            return await ctx.send(embed=embed)
 
         await player.set_volume(int(volume))
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Volume:", description=volume)
@@ -168,15 +184,27 @@ class Music:
         return msg
 
     @commands.command(aliases=['q'])
-    async def queue(self, ctx):
+    async def queue(self, ctx, page: int=None):
         """Lists the queue."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
 
-        queue_list = 'Nothing queued' if not player.queue else ''
-        for track in player.queue:
+        if not player.queue:
+            return await ctx.send('There\'s nothing in the queue! Why not queue something?')
+
+        items_per_page = 10
+        pages = math.ceil(len(player.queue) / items_per_page)
+        page = lavalink.Utils.get_number(page)
+
+        start = (page - 1) * items_per_page
+        end = start + items_per_page
+
+        queue_list = ''
+
+        for track in player.queue[start:end]:
             queue_list += f'[**{track.title}**]({track.uri})\n'
 
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Queue', description=queue_list)
+        embed.set_footer(text=f'Viewing page {page}/{pages}')
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['dc'])
