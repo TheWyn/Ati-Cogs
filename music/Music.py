@@ -87,13 +87,13 @@ class Music:
     @commands.command(aliases=['np', 'n', 'song'])
     async def now(self, ctx):
         """Now playing."""
-        expected = ["?", "?", "?", "?", "?"]
+        expected = ["⏮", "⏹", "⏸", "▶", "⏭"]
         emoji = {
-            "back": "?",
-            "stop": "?",
-            "pause": "?",
-            "play": "?",
-            "next": "?"
+            "back": "⏮",
+            "stop": "⏹",
+            "pause": "⏸",
+            "play": "▶",
+            "next": "⏭"
         }
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
         song = 'Nothing'
@@ -138,7 +138,8 @@ class Music:
             await ctx.invoke(self.pause)
         elif react == "play":
             await self._clear_react(message)
-            await ctx.invoke(self.resume)
+            if player.paused:
+                await ctx.invoke(self.pause)
         elif react == "next":
             await self._clear_react(message)
             await ctx.invoke(self.skip)
