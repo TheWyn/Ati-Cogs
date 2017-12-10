@@ -28,12 +28,18 @@ class Music:
         tracks = await self.lavalink.get_tracks(query)
         if not tracks:
             return await ctx.send('Nothing found 👀')
+        if 'list' in query and 'ytsearch:' not in query:
+            for track in tracks:
+                await player.add(requester=ctx.author.id, track=track, play=True)
 
-        await player.add(requester=ctx.author.id, track=tracks[0], play=True)
-
-        embed = discord.Embed(colour=ctx.guild.me.top_role.colour,
-                              title="Track Enqueued",
-                              description=f'[{tracks[0]["info"]["title"]}]({tracks[0]["info"]["uri"]})')
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour,
+                                  title="Playlist Enqueued!",
+                                  description=f"Imported {len(tracks)} tracks from the playlist :)")
+        else:
+            await player.add(requester=ctx.author.id, track=tracks[0], play=True)
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour,
+                                  title="Track Enqueued",
+                                  description=f'[{tracks[0]["info"]["title"]}]({tracks[0]["info"]["uri"]})')
         await ctx.send(embed=embed)
 
     @commands.command(aliases=["resume"])
@@ -168,15 +174,32 @@ class Music:
         return msg
 
     @commands.command(aliases=['q'])
-    async def queue(self, ctx):
-        """Lists the queue."""
+    async def queue(self, ctx, page: str=None):
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
 
-        queue_list = 'Nothing queued' if not player.queue else ''
-        for track in player.queue:
+        if not player.queue:
+            return await ctx.send('There\'s nothing in the queue! Why not queue something?')
+
+        items_per_page = 10
+        pages = math.ceil(len(player.queue) / items_per_page)
+
+        if not page or not lavalink.Utils.is_number(page):
+            page = 1
+        elif page < 1:
+            page = 1
+        elif page > pages:
+            page = pages
+
+        start = (page - 1) * items_per_page
+        end = start + items_per_page
+
+        queue_list = ''
+
+        for track in player.queue[start:end]:
             queue_list += f'[**{track.title}**]({track.uri})\n'
 
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Queue', description=queue_list)
+        embed.set_footer(text=f'Viewing page {page}/{pages}')
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['dc'])
