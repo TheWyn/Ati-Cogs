@@ -157,9 +157,18 @@ class Music:
             req_user = self.bot.get_user(track.requester)
             queue_list += f'[**{track.title}**]({track.uri}), requested by **{req_user}**\n'
 
+        pos = player.position
+        dur = player.current.duration
+        remain = dur - pos
+        time = lavalink.Utils.format_time(remain)
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Queue', description=queue_list)
-        embed.set_footer(text=f'Viewing page {page}/{pages}')
-        await ctx.send(embed=embed)
+
+        if player.current.stream:
+            embed.set_footer(text=f'Viewing page {page}/{pages} - Currently livestreaming {player.current.title}')
+            await ctx.send(embed=embed)
+        else:
+            embed.set_footer(text=f'Viewing page {page}/{pages} - {time} left on {player.current.title}')
+            await ctx.send(embed=embed)
 
 #  An extremely lazy way to populate an embed with search results, make an iterator
     @commands.command(aliases=['pp'])
