@@ -251,8 +251,10 @@ class Music:
         """Skips to the next track."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Skipping...")
-        await ctx.send(embed=embed)
+        message = await ctx.send(embed=embed)
         await player.skip()
+        now_playing = await ctx.invoke(self.now)
+        await message.edit(content=now_playing)
 
     @commands.command(aliases=['s'])
     async def stop(self, ctx):
