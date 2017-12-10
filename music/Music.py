@@ -18,8 +18,7 @@ class Music:
         """Clears the queue."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
         player.queue = None
-        title = "Queue cleared."
-        await self._embed_msg(ctx, title)
+        await self._embed_msg(ctx, "Queue cleared.")
 
     @commands.command(aliases=['dc'])
     async def disconnect(self, ctx):
@@ -97,12 +96,10 @@ class Music:
             return
         if player.paused:
             await player.set_paused(False)
-            title = "Music resumed."
-            await self._embed_msg(ctx, title)
+            await self._embed_msg(ctx, "Music resumed.")
         else:
             await player.set_paused(True)
-            title = "Music paused."
-            await self._embed_msg(ctx, title)
+            await self._embed_msg(ctx, "Music paused.")
 
     @commands.command(aliases=['p'])
     async def play(self, ctx, *, query):
@@ -116,8 +113,7 @@ class Music:
                 query = f'ytsearch:{query}'
             tracks = await self.lavalink.get_tracks(query)
             if not tracks:
-                title = "Nothing found 👀"
-                return await self._embed_msg(ctx, title)
+                return await self._embed_msg(ctx, "Nothing found 👀")
             if 'list' in query and 'ytsearch:' not in query:
                 for track in tracks:
                     await player.add(requester=ctx.author.id, track=track, play=True)
@@ -131,8 +127,7 @@ class Music:
                                       description=f'[{tracks[0]["info"]["title"]}]({tracks[0]["info"]["uri"]})')
             await ctx.send(embed=embed)
         else:
-            title = "You must be in a voice channel to play music."
-            await self._embed_msg(ctx, title)
+            await self._embed_msg(ctx, "You must be in a voice channel to play music.")
 
     @commands.command(aliases=['q'])
     async def queue(self, ctx, page: int=None):
@@ -140,8 +135,7 @@ class Music:
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
 
         if not player.queue:
-            title = "There\'s nothing in the queue!"
-            return await self._embed_msg(ctx, title)
+            return await self._embed_msg(ctx, "There\'s nothing in the queue!")
 
         items_per_page = 10
         pages = math.ceil(len(player.queue) / items_per_page)
@@ -187,8 +181,7 @@ class Music:
             query = f'ytsearch:{query}'
         tracks = await self.lavalink.get_tracks(query)
         if not tracks:
-            title = "Nothing found 👀"
-            return await self._embed_msg(ctx, title)
+            return await self._embed_msg(ctx, "Nothing found 👀")
         if 'list' not in query and 'ytsearch:' in query:
             embed = discord.Embed(colour=ctx.guild.me.top_role.colour,
                                   title="Tracks Found:",
@@ -232,7 +225,7 @@ class Music:
                 await player.add(requester=ctx.author.id, track=track, play=True)
 
             songembed = discord.Embed(colour=ctx.guild.me.top_role.colour, title=f"Queued {len(tracks)} track(s).")
-            message = await ctx.send(embed=songembed)     
+            message = await ctx.send(embed=songembed)
 
     @commands.command()
     async def shuffle(self, ctx):
@@ -240,8 +233,7 @@ class Music:
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
 
         if not player.is_playing():
-            title = "Nothing playing."
-            return await self._embed_msg(ctx, title)
+            return await self._embed_msg(ctx, "Nothing playing.")
 
         player.shuffle = not player.shuffle
 
@@ -280,12 +272,10 @@ class Music:
         if ctx.author.voice is not None:
             player = await self.lavalink.get_player(guild_id=ctx.guild.id)
             if player.is_playing():
-                title = "Stopping..."
-                await self._embed_msg(ctx, title)
+                await self._embed_msg(ctx, "Stopping...")
                 await player.stop()
         else:
-            title = "You must be in a voice channel to stop the music."
-            await self._embed_msg(ctx, title)
+            await self._embed_msg(ctx, "You must be in a voice channel to stop the music.")
 
     @commands.command(aliases=['vol'])
     async def volume(self, ctx, volume=None):
