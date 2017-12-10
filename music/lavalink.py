@@ -4,6 +4,8 @@ import json
 import aiohttp
 import websockets
 
+__version__ = '1.0.1'
+
 
 class Requests:
     def __init__(self):
@@ -45,9 +47,11 @@ class Player:
 
         self.is_connected = lambda: self.channel_id is not None
         self.is_playing = lambda: self.current is not None
+        self.paused = False
 
         self.position = 0
         self.position_timestamp = 0
+        self.volume = 100
 
         self.queue = []
         self.current = None
@@ -60,7 +64,7 @@ class Player:
         }
         await self.client.send(payload)
         self.channel_id = str(channel_id)
-    
+
     async def disconnect(self):
         if not self.is_connected():
             return
@@ -110,8 +114,46 @@ class Player:
     async def skip(self):
         await self.play()
 
+    async def set_paused(self, pause):
+        payload = {
+            'op': 'pause',
+            'guildId': self.guild_id,
+            'pause': pause
+        }
+        await self.client.send(payload)
+        self.paused = pause
+
+    async def set_volume(self, vol):
+        if not Utils.is_number(vol):
+            return
+
+        if vol < 0:
+            vol = 0
+
+        if vol > 150:
+            vol = 150
+
+        payload = {
+            'op': 'volume',
+            'guildId': self.guild_id,
+            'volume': vol
+        }
+        await self.client.send(payload)
+        self.volume = vol
+        return vol
+
+    async def seek(self, pos):
+        payload = {
+            'op': 'seek',
+            'guildId': self.guild_id,
+            'position': pos
+        }
+        await self.client.send(payload)
+
     async def _on_track_end(self, data):
         self.position = 0
+        self.paused = False
+
         if data.get('reason') == 'FINISHED':
             await self.play()
 
@@ -148,6 +190,7 @@ class Client:
 
         if not hasattr(self.bot, 'players'):
             self.bot.players = {}
+            self.bot.players._requester = Requests()
 
         self.loop = loop
         self.shard_count = len(self.bot.shards) if hasattr(self.bot, 'shards') else 1
@@ -157,39 +200,50 @@ class Client:
         self.port = port
         self.rest = rest
         self.uri = f'ws://{host}:{port}'
-        self.requester = Requests()
 
-        loop.create_task(self._connect())
+        asyncio.ensure_future(self._connect())
 
     async def _connect(self):
-        headers = {
-            'Authorization': self.password,
-            'Num-Shards': self.shard_count,
-            'User-Id': self.user_id
-        }
         try:
-            self.ws = await websockets.connect(self.uri, extra_headers=headers)
+            headers = {
+                'Authorization': self.password,
+                'Num-Shards': self.shard_count,
+                'User-Id': self.user_id
+            }
+            self.bot.players._ws = await websockets.connect(self.uri, extra_headers=headers)
             self.loop.create_task(self._listen())
-            print("[WS] Ready")
-        except Exception as e:
-            raise e from None
+            print("[Lavalink.py] Established connection to lavalink")
+        except OSError:
+            print('[Lavalink.py] Failed to connect to lavalink')
 
     async def _listen(self):
-        while True:
-            data = await self.ws.recv()
-            j = json.loads(data)
+        try:
+            while True:
+                data = await self.bot.players._ws.recv()
+                j = json.loads(data)
 
-            if 'op' in j:
-                if j.get('op') == 'validationReq':
-                    await self._dispatch_join_validator(j)
-                elif j.get('op') == 'isConnectedReq':
-                    await self._validate_shard(j)
-                elif j.get('op') == 'sendWS':
-                    await self.bot._connection._get_websocket(330777295952543744).send(j.get('message'))  # todo: move this to play (voice updates)
-                elif j.get('op') == 'event':
-                    await self._dispatch_event(j)
-                elif j.get('op') == 'playerUpdate':
-                    await self._update_state(j)
+                if 'op' in j:
+                    if j.get('op') == 'validationReq':
+                        await self._dispatch_join_validator(j)
+                    elif j.get('op') == 'isConnectedReq':
+                        await self._validate_shard(j)
+                    elif j.get('op') == 'sendWS':
+                        await self.bot._connection._get_websocket(330777295952543744).send(j.get('message'))  # todo: move this to play (voice updates)
+                    elif j.get('op') == 'event':
+                        await self._dispatch_event(j)
+                    elif j.get('op') == 'playerUpdate':
+                        await self._update_state(j)
+        except websockets.ConnectionClosed:
+            print('[Lavalink.py] Connection closed... Attempting to reconnect in 30 seconds')
+            self.bot.players._ws.close()
+            for a in [1, 2, 3]:  # 3 Attempts
+                await asyncio.sleep(30)
+                print(f'[Lavalink.py] Attempting to reconnect (attempt: {a})')
+                await self._connect()
+                if self.bot.players._ws.open:
+                    return
+
+            print('[Lavalink.py] Failed to re-establish a connection with lavalink.')
 
     async def _dispatch_event(self, data):
         t = data.get('type')
@@ -238,10 +292,10 @@ class Client:
         await self.send(payload)
 
     async def send(self, data):
-        if not hasattr(self, 'ws') or not self.ws.open:
+        if '_ws' not in self.bot.players or not self.bot.players._ws.open:
             return
         payload = json.dumps(data)
-        await self.ws.send(payload)
+        await self.bot.players._ws.send(payload)
 
     async def dispatch_voice_update(self, payload):
         await self.send(payload)
@@ -258,12 +312,13 @@ class Client:
             'Authorization': self.password,
             'Accept': 'application/json'
         }
-        return await self.requester.get(url=f'http://{self.host}:{self.rest}/loadtracks?identifier={query}', jsonify=True, headers=headers)
+        return await self.bot.players._requester.get(url=f'http://{self.host}:{self.rest}/loadtracks?identifier={query}', jsonify=True, headers=headers)
         # data = {
         #     'is_search': any(s in query for s in ['ytsearch', 'scsearch']),
         #     'results': tracks
         # }
         # return data
+
 
 class Utils:
 
@@ -273,3 +328,11 @@ class Utils:
         minutes = (time / (1000 * 60)) % 60
         hours = (time / (1000 * 60 * 60)) % 24
         return "%02d:%02d:%02d" % (hours, minutes, seconds)
+
+    @staticmethod
+    def is_number(num):
+        try:
+            int(num)
+            return True
+        except ValueError:
+            return False
