@@ -63,6 +63,8 @@ class Music:
     async def skip(self, ctx):
         """Skips to the next track."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
+        embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Skipping...")
+        await ctx.send(embed=embed)
         await player.skip()
 
     @commands.command(aliases=['s'])
@@ -77,15 +79,22 @@ class Music:
             pass
 
     @commands.command(aliases=['vol'])
-    async def volume(self, ctx, volume):
+    async def volume(self, ctx, volume=None):
         """Sets the volume, 1 - 100."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
 
+        if not volume:
+            vol = player.volume
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Volume: ", description=str(vol) + "%")
+            return await ctx.send(embed=embed)
+
         if not player.is_playing():
-            return
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Nothing playing.")
+            return await ctx.send(embed=embed)
 
         if not lavalink.Utils.is_number(volume):
-            return await ctx.send('You didn\'t specify a valid number!')
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="You didn\'t specify a valid number!")
+            return await ctx.send(embed=embed)
 
         await player.set_volume(int(volume))
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Volume:", description=volume)
