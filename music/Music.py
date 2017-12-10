@@ -50,7 +50,8 @@ class Music:
         if not player.current:
             song = f'Nothing.'
         else:
-            song = f'**[{player.current.title}]({player.current.uri})**\n{arrow}\n({pos}/{dur})'
+            req_user = self.bot.get_user(player.current.requester)
+            song = f'**[{player.current.title}]({player.current.uri})**\nReqested by: **{req_user}**\n{arrow}\n({pos}/{dur})'
 
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Now Playing', description=song)
         message = await ctx.send(embed=embed)
@@ -153,7 +154,8 @@ class Music:
         queue_list = ''
 
         for track in player.queue[start:end]:
-            queue_list += f'[**{track.title}**]({track.uri})\n'
+            req_user = self.bot.get_user(track.requester)
+            queue_list += f'[**{track.title}**]({track.uri}), requested by **{req_user}**\n'
 
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Queue', description=queue_list)
         embed.set_footer(text=f'Viewing page {page}/{pages}')
