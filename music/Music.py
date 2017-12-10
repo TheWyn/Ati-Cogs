@@ -12,9 +12,6 @@ class Music:
         self.state_keys = {}
         self.validator = ['op', 'guildId', 'sessionId', 'event']
 
-    async def _stopping(self, ctx):
-        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
-
     @commands.command(aliases=['p'])
     async def play(self, ctx, *, query):
         """Play a URL or search for a song."""
