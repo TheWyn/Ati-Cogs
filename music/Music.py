@@ -175,6 +175,7 @@ class Music:
 
     @commands.command(aliases=['q'])
     async def queue(self, ctx, page: str=None):
+        """Lists the queue."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
 
         if not player.queue:
