@@ -1,5 +1,6 @@
 import asyncio
 import discord
+import math
 from discord.ext import commands
 from . import lavalink
 
@@ -174,7 +175,7 @@ class Music:
         return msg
 
     @commands.command(aliases=['q'])
-    async def queue(self, ctx, page: str=None):
+    async def queue(self, ctx, page: int=None):
         """Lists the queue."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
 
