@@ -13,6 +13,12 @@ class Music:
         self.state_keys = {}
         self.validator = ['op', 'guildId', 'sessionId', 'event']
 
+    @commands.command()
+    async def audiostats(self, ctx):
+        """Audio stats."""
+        servers = await self._get_playing()
+        await self._embed_msg(ctx, f'Playing music in {servers} servers.')
+
     @commands.command(name="clear")
     async def queueclear(self, ctx):
         """Clears the queue."""
@@ -352,6 +358,9 @@ class Music:
     async def _embed_msg(self, ctx, title):
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title=title)
         await ctx.send(embed=embed)
+
+    async def _get_playing(self):
+        return len([p for p in self.bot.players.values() if p.is_playing()])
 
     async def on_voice_server_update(self, data):
         self.state_keys.update({
