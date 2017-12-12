@@ -315,11 +315,9 @@ class Music:
             embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Volume: ", description=str(vol) + "%")
             return await ctx.send(embed=embed)
         if not player.is_playing():
-            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Nothing playing.")
-            return await ctx.send(embed=embed)
+            return await self._embed_msg(ctx, "Nothing playing.")
         if not lavalink.Utils.is_number(volume):
-            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="You didn\'t specify a valid number!")
-            return await ctx.send(embed=embed)
+            return await self._embed_msg(ctx, "You didn\'t specify a valid number!")
         if int(volume) > 100:
             volume = 100
             await player.set_volume(int(volume))
