@@ -137,6 +137,9 @@ class Music:
         if not player.queue:
             return await self._embed_msg(ctx, "There\'s nothing in the queue!")
 
+        if player.current is None:
+            return await self._embed_msg(ctx, "The player is stopped.")
+
         items_per_page = 10
         pages = math.ceil(len(player.queue) / items_per_page)
         page = lavalink.Utils.get_number(page)
