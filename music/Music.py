@@ -324,7 +324,6 @@ class Music:
             volume = 100
             await player.set_volume(int(volume))
         else:
-            volume = volume
             await player.set_volume(int(volume))
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title="Volume:", description=str(volume) + "%")
         await ctx.send(embed=embed)
