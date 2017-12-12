@@ -1,0 +1,14 @@
+{
+  "author": [
+    “Atiwiex and aikaterna”
+  ],
+  "description": “A Red v3 music cog using Lavalink. You must install, configure, and start the Lavalink server for this cog to work.“,
+  "short": “Lavalink music player“,
+  "tags": [
+    “audio”,
+    “music”,
+    “radio”,
+    “livestream”
+  ],
+  "type": "COG"
+}
