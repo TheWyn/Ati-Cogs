@@ -2,7 +2,7 @@ import asyncio
 import discord
 import math
 from discord.ext import commands
-from . import lavalink
+from lavalink import lavalink
 
 
 class Music:
