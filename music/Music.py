@@ -181,7 +181,6 @@ class Music:
         title = ('Repeat ' + ('enabled!' if player.repeat else 'disabled.'))
         return await self._embed_msg(ctx, title)
 
-#  An extremely lazy way to populate an embed with search results, make an iterator
     @commands.command()
     async def search(self, ctx, *, query):
         """Pick a song with a search."""
@@ -271,15 +270,29 @@ class Music:
             return await self._embed_msg(ctx, "The player is stopped.")
 
         if not player.queue:
-            return await self._embed_msg(ctx, "There\'s nothing in the queue!")
-        
+            pos = player.position
+            dur = player.current.duration
+            remain = dur - pos
+            time = lavalink.Utils.format_time(remain)
+            if player.current.stream:
+                embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='There\'s nothing in the queue!')
+                embed.set_footer(text=f'Currently livestreaming {player.current.title}')
+                return await ctx.send(embed=embed)
+            elif player.current.track:
+                embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='There\'s nothing in the queue!')
+                embed.set_footer(text=f'{time} left on {player.current.title}')
+                return await ctx.send(embed=embed)
+            else:
+                return await self._embed_msg(ctx, "There\'s nothing in the queue!")
+
         if not ctx.author.voice or (player.is_connected() and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, "You must be in the voice channel to skip the music.")
 
         await player.skip()
-        song = f'**[{player.current.title}]({player.current.uri})**'
-        embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Now Playing', description=song)
-        await ctx.send(embed=embed)
+        if player.current:
+            song = f'**[{player.current.title}]({player.current.uri})**'
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Now Playing', description=song)
+            await ctx.send(embed=embed)
 
     @commands.command(aliases=['s'])
     async def stop(self, ctx):
@@ -327,7 +340,7 @@ class Music:
         pos = player.position
         dur = player.current.duration
         sections = 12
-        loc_time = round((pos / dur) * sections)  # 10 sections
+        loc_time = round((pos / dur) * sections)
         bar = ':white_small_square:'
         seek = ':small_blue_diamond:'
         msg = "|"
