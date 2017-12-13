@@ -17,7 +17,7 @@ class Music:
     async def audiostats(self, ctx):
         """Audio stats."""
         servers = await self._get_playing()
-        await self._embed_msg(ctx, f'Playing music in {servers} servers.')
+        await self._embed_msg(ctx, 'Playing music in {} servers.'.format(servers))
 
     @commands.command(aliases=['dc'])
     async def disconnect(self, ctx):
@@ -46,10 +46,10 @@ class Music:
             else:
                 dur = lavalink.Utils.format_time(player.current.duration)
         if not player.current:
-            song = f'Nothing.'
+            song = 'Nothing.'
         else:
             req_user = self.bot.get_user(player.current.requester)
-            song = f'**[{player.current.title}]({player.current.uri})**\nReqested by: **{req_user}**\n{arrow}\n({pos}/{dur})'
+            song = '**[{}]({})**\nReqested by: **{}**\n{}\n({}/{})'.format(player.current.title, player.current.uri, req_user, arrow, pos, dur)
 
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Now Playing', description=song)
         message = await ctx.send(embed=embed)
@@ -112,21 +112,19 @@ class Music:
             await player.connect(channel_id=ctx.author.voice.channel.id)
         query = query.strip('<>')
         if not query.startswith('http'):
-            query = f'ytsearch:{query}'
+            query = 'ytsearch:{}'.format(query)
         tracks = await self.lavalink.get_tracks(query)
         if not tracks:
             return await self._embed_msg(ctx, 'Nothing found 👀')
         if 'list' in query and 'ytsearch:' not in query:
             for track in tracks:
                 await player.add(requester=ctx.author.id, track=track, play=True)
-            embed = discord.Embed(colour=ctx.guild.me.top_role.colour,
-                                  title='Playlist Enqueued',
-                                  description=f'Added {len(tracks)} tracks to the queue.')
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Playlist Enqueued', description='Added {} tracks to the queue.'.format(len(tracks)))
         else:
             await player.add(requester=ctx.author.id, track=tracks[0], play=True)
-            embed = discord.Embed(colour=ctx.guild.me.top_role.colour,
-                                  title='Track Enqueued',
-                                  description=f'[{tracks[0]["info"]["title"]}]({tracks[0]["info"]["uri"]})')
+            track_title = tracks[0]["info"]["title"]
+            track_url = tracks[0]["info"]["uri"]
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Track Enqueued', description='[{}]({})'.format(track_title, track_url))
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['q'])
@@ -150,19 +148,20 @@ class Music:
 
         for i, track in enumerate(player.queue[start:end], start=start):
             req_user = self.bot.get_user(track.requester)
-            queue_list += f'`{i + 1}.` [**{track.title}**]({track.uri}), requested by **{req_user}**\n'
+            next = i + 1
+            queue_list += '`{}.` [**{}**]({}), requested by **{}**\n'.format(next, track.title, track.uri, req_user)
 
         pos = player.position
         dur = player.current.duration
         remain = dur - pos
-        time = lavalink.Utils.format_time(remain)
+        time_remain = lavalink.Utils.format_time(remain)
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Queue for ' + ctx.guild.name, description=queue_list)
 
         if player.current.stream:
-            embed.set_footer(text=f'Page {page}/{pages} | {len(player.queue)} tracks | Currently livestreaming {player.current.title}')
+            embed.set_footer(text='Page {}/{} | {len()} tracks | Currently livestreaming {}'.format(page, pages, len(player.queue), player.current.title))
             await ctx.send(embed=embed)
         else:
-            embed.set_footer(text=f'Page {page}/{pages} | {len(player.queue)} tracks | {time} left on {player.current.title}')
+            embed.set_footer(text='Page {}/{} | {} tracks | {} left on {}'.format(page, pages, len(player.queue), time_remain, player.current.title))
             await ctx.send(embed=embed)
 
     @commands.command()
@@ -182,12 +181,17 @@ class Music:
 
     @commands.command()
     async def search(self, ctx, *, query):
-        """Pick a song with a search."""
-        expected = ["1⃣", "2⃣", "3⃣"]
+        """Pick a song with a search. 
+        Use [p]search list <search term> to queue all songs."""
+        expected = ["1⃣", "2⃣", "3⃣", "4⃣", "5⃣", "⏪", "⏩"]
         emoji = {
             "one": "1⃣",
             "two": "2⃣",
-            "three": "3⃣"
+            "three": "3⃣",
+            "four": "4⃣",
+            "five": "5⃣",
+            "back": "⏪",
+            "next": "⏩"
         }
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
         if not ctx.author.voice or (player.is_connected() and ctx.author.voice.channel.id != int(player.channel_id)):
@@ -196,54 +200,70 @@ class Music:
             await player.connect(channel_id=ctx.author.voice.channel.id)
         query = query.strip('<>')
         if not query.startswith('http'):
-            query = f'ytsearch:{query}'
+            query = 'ytsearch:{}'.format(query)
         tracks = await self.lavalink.get_tracks(query)
         if not tracks:
             return await self._embed_msg(ctx, 'Nothing found 👀')
         if 'list' not in query and 'ytsearch:' in query:
-            embed = discord.Embed(colour=ctx.guild.me.top_role.colour,
-                                  title='Tracks Found:',
-                                  description=f'1. [{tracks[0]["info"]["title"]}]({tracks[0]["info"]["uri"]})\n2. [{tracks[1]["info"]["title"]}]({tracks[1]["info"]["uri"]})\n3. [{tracks[2]["info"]["title"]}]({tracks[2]["info"]["uri"]})')
+            page = 1
+            items_per_page = 5
+            pages = math.ceil(len(tracks) / items_per_page)
+            page = lavalink.Utils.get_number(page)
+            start = (page - 1) * items_per_page
+            end = start + items_per_page
+
+            search_list = ''
+
+            for i, track in enumerate(tracks[start:end], start=start):
+                next = i + 1
+                search_list += '`{0}.` [**{1}**]({2})\n'.format(next, tracks[i]["info"]["title"], tracks[i]["info"]["uri"])
+
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Tracks Found:', description=search_list)
+            embed.set_footer(text='Page {}/{} | {} search results'.format(page, pages, len(tracks)))
             message = await ctx.send(embed=embed)
 
             def check(r, u):
                 return r.message.id == message.id and u == ctx.message.author
-            for i in range(3):
+            for i in range(7):
                 await message.add_reaction(expected[i])
             try:
-                (r, u) = await self.bot.wait_for('reaction_add', check=check, timeout=10.0)
+                (r, u) = await self.bot.wait_for('reaction_add', check=check, timeout=30.0)
             except asyncio.TimeoutError:
                 await self._clear_react(message)
                 return
             reacts = {v: k for k, v in emoji.items()}
             react = reacts[r.emoji]
             if react == 'one':
-                await self._clear_react(message)
-                await player.add(requester=ctx.author.id, track=tracks[0], play=True)
-                embed = discord.Embed(colour=ctx.guild.me.top_role.colour,
-                                      title='Track Enqueued',
-                                      description=f'[{tracks[0]["info"]["title"]}]({tracks[0]["info"]["uri"]})')
-                await ctx.send(embed=embed)
+                await self._search_button(ctx, message, tracks, entry=0)
             elif react == 'two':
-                await self._clear_react(message)
-                await player.add(requester=ctx.author.id, track=tracks[1], play=True)
-                embed = discord.Embed(colour=ctx.guild.me.top_role.colour,
-                                      title='Track Enqueued',
-                                      description=f'[{tracks[1]["info"]["title"]}]({tracks[1]["info"]["uri"]})')
-                await ctx.send(embed=embed)
+                await self._search_button(ctx, message, tracks, entry=1)
             elif react == 'three':
+                await self._search_button(ctx, message, tracks, entry=2)
+            elif react == 'four':
+                await self._search_button(ctx, message, tracks, entry=3)
+            elif react == 'five':
+                await self._search_button(ctx, message, tracks, entry=4)
+
+            elif react == 'back':
                 await self._clear_react(message)
-                await player.add(requester=ctx.author.id, track=tracks[2], play=True)
-                embed = discord.Embed(colour=ctx.guild.me.top_role.colour,
-                                      title='Track Enqueued',
-                                      description=f'[{tracks[2]["info"]["title"]}]({tracks[2]["info"]["uri"]})')
-                await ctx.send(embed=embed)
+                return
+            elif react == 'next':
+                await self._clear_react(message)
+                return
         else:
             for track in tracks:
                 await player.add(requester=ctx.author.id, track=track, play=True)
-
-            songembed = discord.Embed(colour=ctx.guild.me.top_role.colour, title=f'Queued {len(tracks)} track(s).')
+            songembed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Queued {} track(s).'.format(len(tracks)))
             message = await ctx.send(embed=songembed)
+
+    async def _search_button(self, ctx, message, tracks, entry: int):
+        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
+        await self._clear_react(message)
+        await player.add(requester=ctx.author.id, track=tracks[entry], play=True)
+        track_title = tracks[entry]["info"]["title"]
+        track_url = tracks[entry]["info"]["uri"]
+        embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Track Enqueued', description='[{}]({})'.format(track_title, track_url))
+        return await ctx.send(embed=embed)
 
     @commands.command()
     async def seek(self, ctx, seconds: int=5):
@@ -257,7 +277,7 @@ class Music:
             else:
                 time_sec = seconds * 1000
                 seek = player.position + time_sec
-                await self._embed_msg(ctx, f'Moved {seconds}s to {lavalink.Utils.format_time(seek)}')
+                await self._embed_msg(ctx, 'Moved {}s to {}'.format(seconds, lavalink.Utils.format_time(seek)))
                 return await player.seek(seek)
 
     @commands.command()
@@ -287,14 +307,14 @@ class Music:
             pos = player.position
             dur = player.current.duration
             remain = dur - pos
-            time = lavalink.Utils.format_time(remain)
+            time_remain = lavalink.Utils.format_time(remain)
             if player.current.stream:
                 embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='There\'s nothing in the queue.')
-                embed.set_footer(text=f'Currently livestreaming {player.current.title}')
+                embed.set_footer(text='Currently livestreaming {}'.format(player.current.title))
                 return await ctx.send(embed=embed)
             elif player.current.track:
                 embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='There\'s nothing in the queue.')
-                embed.set_footer(text=f'{time} left on {player.current.title}')
+                embed.set_footer(text='{} left on {}'.format(time_remain, player.current.title))
                 return await ctx.send(embed=embed)
             else:
                 return await self._embed_msg(ctx, 'There\'s nothing in the queue.')
@@ -304,7 +324,7 @@ class Music:
 
         await player.skip()
         if player.current:
-            song = f'**[{player.current.title}]({player.current.uri})**'
+            song = '**[{}]({})**'.format(player.current.title, player.current.uri)
             embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Now Playing', description=song)
             await ctx.send(embed=embed)
 
