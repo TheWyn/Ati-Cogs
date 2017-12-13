@@ -253,6 +253,21 @@ class Music:
             message = await ctx.send(embed=songembed)
 
     @commands.command()
+    async def seek(self, ctx, seconds: int=5):
+        """Seeks ahead or behind on a track by seconds."""
+        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
+        if not ctx.author.voice or (player.is_connected() and ctx.author.voice.channel.id != int(player.channel_id)):
+            return await self._embed_msg(ctx, "You must be in the voice channel to use seek.")
+        if player.is_playing():
+            if player.current.stream:
+                return await self._embed_msg(ctx, f"Can't seek on a stream.")
+            else:
+                time_sec = seconds * 1000
+                seek = player.position + time_sec
+                await self._embed_msg(ctx, f"Seeking {seconds} seconds...")
+                return await player.seek(seek)
+
+    @commands.command()
     async def shuffle(self, ctx):
         """Toggles shuffle."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
