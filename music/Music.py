@@ -253,8 +253,7 @@ class Music:
         else:
             for track in tracks:
                 await player.add(requester=ctx.author.id, track=track, play=True)
-
-            songembed = discord.Embed(colour=ctx.guild.me.top_role.colour, title=f'Queued {len(tracks)} track(s).')
+            songembed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Queued {} track(s).'.format(len(tracks)))
             message = await ctx.send(embed=songembed)
 
     async def _search_button(self, ctx, message, tracks, entry: int):
