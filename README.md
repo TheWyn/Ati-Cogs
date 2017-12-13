@@ -14,7 +14,7 @@ Your mileage may vary! This is in alpha and is still being developed. If you run
 
 - Install Ati-Cogs and install the music cog. You may need to sideload this cog by downloading the zip and placing it in your cogs folder for v3.
 - `[p]repo add Ati-Cogs https://github.com/atiwiex/Ati-Cogs v3`
-- `[p]cog install Ati-Cogs music`
+- `[p]cog install AtiCogs music`
 - `pip install lavalink`
 - Find your Python lib directory and open state.py in the discord folder, going to line 791.
 - Add the line: `self.dispatch('voice_server_update', data)` under the `def parse_voice_server_update(self, data):` line.
