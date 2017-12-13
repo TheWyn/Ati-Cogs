@@ -13,7 +13,7 @@ You will need to modify discord.py for this to work. There is a PR currently ope
 Your mileage may vary! This is in alpha and is still being developed. If you run into issues you may need to do a little googling.
 
 - Install Ati-Cogs and install the music cog. You may need to sideload this cog by downloading the zip and placing it in your cogs folder for v3.
-- `[p]repo add Ati-Cogs https://github.com/atiwiex/Ati-Cogs v3`
+- `[p]repo add AtiCogs https://github.com/atiwiex/Ati-Cogs v3`
 - `[p]cog install AtiCogs music`
 - `pip install lavalink`
 - Find your Python lib directory and open state.py in the discord folder, going to line 791.
