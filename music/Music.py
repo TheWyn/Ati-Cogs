@@ -54,7 +54,7 @@ class Music:
     async def disconnect(self, ctx):
         """Disconnect from the voice channel."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
-        await player.disconnect()   
+        await player.disconnect()
 
     @commands.command(aliases=['np', 'n', 'song'])
     async def now(self, ctx):
@@ -212,7 +212,7 @@ class Music:
 
     @commands.command()
     async def search(self, ctx, *, query):
-        """Pick a song with a search. 
+        """Pick a song with a search.
         Use [p]search list <search term> to queue all songs."""
         expected = ["1⃣", "2⃣", "3⃣", "4⃣", "5⃣", "⏪", "⏩"]
         emoji = {
