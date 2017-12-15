@@ -14,7 +14,7 @@ class Music:
         default_global = {
             "host": 'localhost',
             "port": '80',
-            "password": 'youshallnotpass'
+            "passw": 'youshallnotpass'
         }
 
         self.config.register_global(**default_global)
@@ -54,7 +54,7 @@ class Music:
     async def disconnect(self, ctx):
         """Disconnect from the voice channel."""
         player = await self.lavalink.get_player(guild_id=ctx.guild.id)
-        await player.disconnect()
+        await player.disconnect()   
 
     @commands.command(aliases=['np', 'n', 'song'])
     async def now(self, ctx):
