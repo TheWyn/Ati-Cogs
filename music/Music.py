@@ -395,7 +395,7 @@ class Music:
     @commands.group(aliases=['llset'])
     @checks.is_owner()
     async def llsetup(self, ctx):
-        """Use `llset host`, `llset password`, or `llset port`."""
+        """Lavalink server configuration options."""
         if ctx.invoked_subcommand is None:
             await ctx.send_help()
 
