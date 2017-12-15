@@ -411,7 +411,7 @@ class Music:
         """Set the lavalink server password."""
         await self.config.passw.set(str(passw))
         get_passw = await self.config.passw()
-        await self._embed_msg(ctx, "Server password set to {}.".format(get_port))
+        await self._embed_msg(ctx, "Server password set to {}.".format(get_passw))
 
     @llsetup.command()
     async def port(self, ctx, port):
