@@ -1,17 +1,48 @@
 import asyncio
 import discord
+import lavalink
 import math
 from discord.ext import commands
-import lavalink
+from redbot.core import Config, checks
 
 
 class Music:
-    def __init__(self, bot):
+    def __init__(self, bot, loop: asyncio.BaseEventLoop):
         self.bot = bot
-        self.lavalink = lavalink.Client(bot=bot, password='youshallnotpass', host='localhost'. port='80', loop=self.bot.loop)
+        self.config = Config.get_conf(self, 2711759128, force_registration=True)
 
-        self.state_keys = {}
-        self.validator = ['op', 'guildId', 'sessionId', 'event']
+        default_global = {
+            "host": 'localhost',
+            "port": '80',
+            "password": 'youshallnotpass'
+        }
+
+        self.config.register_global(**default_global)
+        loop.create_task(self.init_config(bot, loop))
+
+    async def init_config(self, bot, loop):
+        host = await self.config.host()
+        passw = await self.config.passw()
+        port = await self.config.port()
+
+        try:
+            self._lavalink = lavalink.Client(bot=bot, password=passw, host=host, port=port, loop=loop)
+            self._state_keys = {}
+            self._validator = ['op', 'guildId', 'sessionId', 'event']
+        except RuntimeError:
+            pass
+
+    @property
+    def lavalink(self):
+        return self._lavalink
+
+    @property
+    def state_keys(self):
+        return self._state_keys
+
+    @property
+    def validator(self):
+        return self._validator
 
     @commands.command()
     async def audiostats(self, ctx):
@@ -360,6 +391,34 @@ class Music:
             await player.set_volume(int(volume))
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Volume:', description=str(volume) + '%')
         await ctx.send(embed=embed)
+
+    @commands.group(aliases=['llset'])
+    @checks.is_owner()
+    async def llsetup(self, ctx):
+        """Use `llset host`, `llset password`, or `llset port`."""
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help()
+
+    @llsetup.command()
+    async def host(self, ctx, host):
+        """Set the lavalink server host."""
+        await self.config.host.set(host)
+        get_host = await self.config.host()
+        await self._embed_msg(ctx, "Host set to {}.".format(get_host))
+
+    @llsetup.command()
+    async def password(self, ctx, passw):
+        """Set the lavalink server password."""
+        await self.config.passw.set(str(passw))
+        get_passw = await self.config.passw()
+        await self._embed_msg(ctx, "Server password set to {}.".format(get_port))
+
+    @llsetup.command()
+    async def port(self, ctx, port):
+        """Set the lavalink server port."""
+        await self.config.port.set(str(port))
+        get_port = await self.config.port()
+        await self._embed_msg(ctx, "Port set to {}.".format(get_port))
 
     async def _clear_react(self, message):
         try:
