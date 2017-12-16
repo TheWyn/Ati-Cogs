@@ -40,8 +40,8 @@ Your mileage may vary! This is in alpha and is still being developed. If you run
 If you have trouble where the bot won't connect to voice or won't play the track because of server connection issues, make sure that the port, the ip, and the password is consistent in all three files:
 
 - /lib/python3.6/site-packages/lavalink, line 12
-- /cogs/CogManager/cogs/music, line 11
 - lavalink/application.yaml
+- Your music cog's settings - [p]llsetup
 
 These directories may be different on your system.
 
