@@ -16,19 +16,18 @@ Your mileage may vary! This is in alpha and is still being developed. If you run
 
 - Install Ati-Cogs and install the music cog. You may need to sideload this cog by downloading the zip and placing it in your cogs folder for v3.
 
-- `[p]repo add AtiCogs https://github.com/atiwiex/Ati-Cogs v3`
-- `[p]cog install AtiCogs music`
+- `[p]repo add aticogs https://github.com/atiwiex/Ati-Cogs v3`
+- `[p]cog install aticogs music`
 
 - `pip install lavalink`
 
 - Find your Python lib directory.
-- In the lavalink directory, open lavalink.py, and go to line 12. Change the port from 80 to 81.
 - In the discord directory, open state.py, and go to line 791.
 - Add the line: `self.dispatch('voice_server_update', data)` under the `def parse_voice_server_update(self, data):` line.
 
 - Install Java.
 - Get the latest Lavalink jar and server. `https://ci.fredboat.com/viewLog.html?buildId=lastSuccessful&buildTypeId=Lavalink_Build&tab=artifacts&guest=1`
-- Place them in a Lavalink folder on your computer.
+- Place them in a Lavalink folder on your computer, any location that is convenient.
 - Download [application.yml](https://tinyurl.com/yddqwr6z) and place it in the Lavalink folder.
 - Run the jar with `java -jar lavalink.jar`
 - If configured properly, Lavalink will start running.
@@ -39,7 +38,7 @@ Your mileage may vary! This is in alpha and is still being developed. If you run
 
 If you have trouble where the bot won't connect to voice or won't play the track because of server connection issues, make sure that the port, the ip, and the password is consistent in all three files:
 
-- /lib/python3.6/site-packages/lavalink, line 12
+- /lib/python3.6/site-packages/lavalink/models.py, line 14
 - lavalink/application.yaml
 - Your music cog's settings - [p]llsetup
 
