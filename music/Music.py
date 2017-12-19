@@ -80,7 +80,7 @@ class Music:
             song = 'Nothing.'
         else:
             req_user = self.bot.get_user(player.current.requester)
-            song = '**[{}]({})**\nReqested by: **{}**\n{}\n({}/{})'.format(player.current.title, player.current.uri, req_user, arrow, pos, dur)
+            song = '**[{}]({})**\nRequested by: **{}**\n{}\n({}/{})'.format(player.current.title, player.current.uri, req_user, arrow, pos, dur)
 
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Now Playing', description=song)
         message = await ctx.send(embed=embed)
