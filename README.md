@@ -26,7 +26,7 @@ Your mileage may vary! This is in alpha and is still being developed. If you run
 - Add the line: `self.dispatch('voice_server_update', data)` under the `def parse_voice_server_update(self, data):` line.
 
 - Install Java.
-- Get the latest Lavalink jar and server. `https://ci.fredboat.com/viewLog.html?buildId=lastSuccessful&buildTypeId=Lavalink_Build&tab=artifacts&guest=1`
+- Get the latest Lavalink jar and server. `https://ci.fredboat.com/viewLog.html?buildId=2480&tab=artifacts&buildTypeId=Lavalink_Build&logTab=`
 - Place them in a Lavalink folder on your computer, any location that is convenient.
 - Download [application.yml](https://tinyurl.com/yddqwr6z) and place it in the Lavalink folder.
 - Run the jar with `java -jar lavalink.jar`
