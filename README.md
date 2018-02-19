@@ -10,10 +10,6 @@ cowsay - Say it with a cow. Or think it with a cow.
 
 ### Red v3 install instructions for the music cog:
 
-You will need to modify discord.py for this to work. There is a PR currently open to add the needed line.
-
-Your mileage may vary! This is in alpha and is still being developed. If you run into issues you may need to do a little googling.
-
 - Install Ati-Cogs and install the music cog. You may need to sideload this cog by downloading the zip and placing it in your cogs folder for v3.
 
 - `[p]repo add aticogs https://github.com/atiwiex/Ati-Cogs v3`
@@ -21,12 +17,8 @@ Your mileage may vary! This is in alpha and is still being developed. If you run
 
 - `pip install lavalink`
 
-- Find your Python lib directory.
-- In the discord directory, open state.py, and go to line 791.
-- Add the line: `self.dispatch('voice_server_update', data)` under the `def parse_voice_server_update(self, data):` line.
-
 - Install Java.
-- Get the latest Lavalink jar and server. `https://ci.fredboat.com/viewLog.html?buildId=2480&tab=artifacts&buildTypeId=Lavalink_Build&logTab=`
+- Get the latest Lavalink jar and server. `https://ci.fredboat.com/viewLog.html?buildId=2975&tab=artifacts&buildTypeId=Lavalink_Build&logTab=&guest=1`
 - Place them in a Lavalink folder on your computer, any location that is convenient.
 - Download [application.yml](https://tinyurl.com/yddqwr6z) and place it in the Lavalink folder.
 - Run the jar with `java -jar lavalink.jar`
@@ -36,12 +28,27 @@ Your mileage may vary! This is in alpha and is still being developed. If you run
 - Success!
 
 
-If you have trouble where the bot won't connect to voice or won't play the track because of server connection issues, make sure that the port, the ip, and the password is consistent in all three files:
+### If you are an existing v3 cog user of lavalink:
 
-- /lib/python3.6/site-packages/lavalink/models.py, line 14
-- lavalink/application.yaml
-- Your music cog's settings - [p]llsetup
+- Thank you for helping to test and give feedback!
+- Upgrade Red to the latest beta (beta 7+)
+- run `pip install -U lavalink` - this should upgrade you to Lavalink.py 2.0.2.4+
+- Download Lavalink 2.0 and replace your current Lavalink files: https://ci.fredboat.com/viewLog.html?buildId=2975&tab=artifacts&buildTypeId=Lavalink_Build&logTab=&guest=1
 
-These directories may be different on your system.
+
+New: 
+
+- Raise the playlist limit beyond 600 tracks. Add `youtubePlaylistLoadLimit: 2000` or any other value to your application.yml as the last line, with the same indentation as the previous line.
+- Remove songs from the queue with the remove command and the song number.
+- Queue bumping. Bump specific songs to the top of the queue using the song number.
+- [p]queue <page no> now works.
+- Starting to add Red v2 audio features. Audioset notify and audioset status make an appearance (default: off).
+- The beginning of fancy audio stats with [p]audiostats.
+- No more state.py edit!
 
 
+Known Bugs:
+
+- If disconnect is used on a server, it stops players on other servers. Those servers can use `[p]play` with no arguments to start the existing queue again. The help message for the command will show, but the player will start as well.
+- Playlist mixes from YouTube will only queue the first song. Playlist lists work fine.
+- If shuffle is enabled, [p]queue will list the queue with no shuffle (shuffle track is randomly picked from the existing queue).

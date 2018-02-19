@@ -1,3 +1,5 @@
+# Lavalink.py for Red v3 beta 7+
+# Cog base thanks to Kromatic's example cog.
 import asyncio
 import discord
 import lavalink
@@ -14,9 +16,15 @@ class Music:
         default_global = {
             "host": 'localhost',
             "port": '80',
-            "passw": 'youshallnotpass'
+            "passw": 'youshallnotpass',
+            "status": False
         }
 
+        default_guild = {
+            "notify": False
+        }
+
+        self.config.register_guild(**default_guild)
         self.config.register_global(**default_global)
         loop.create_task(self.init_config(bot, loop))
 
@@ -27,47 +35,120 @@ class Music:
 
         try:
             self._lavalink = lavalink.Client(bot=bot, password=passw, host=host, port=port, loop=loop)
-            self._state_keys = {}
-            self._validator = ['op', 'guildId', 'sessionId', 'event']
         except RuntimeError:
             pass
+
+        self.bot.lavalink.client.register_hook(self.track_hook)
 
     @property
     def lavalink(self):
         return self._lavalink
 
-    @property
-    def state_keys(self):
-        return self._state_keys
 
-    @property
-    def validator(self):
-        return self._validator
+    async def track_hook(self, player, event):
+        notify = await self.config.guild(self.bot.get_guild(player.fetch('guild'))).notify()
+        status = await self.config.status()
+
+        if event == 'TrackStartEvent' and notify:
+            c = player.fetch('channel')
+            if c:
+                c = self.bot.get_channel(c)
+                if c:
+                    embed = discord.Embed(colour=c.guild.me.top_role.colour, title='Now Playing', description='**[{}]({})**'.format(player.current.title, player.current.uri))
+                    await c.send(embed=embed)
+
+        if event == 'TrackStartEvent' and status:
+            playing_servers = self.bot.lavalink.players.get_playing()
+            if playing_servers > 1:
+                await self.bot.change_presence(game=discord.Game(name='music in {} servers'.format(playing_servers)))
+            else:
+                await self.bot.change_presence(game=discord.Game(name=str(player.current.title), type=2))
+
+        elif event == 'QueueEndEvent' and notify:
+            c = player.fetch('channel')
+            if c:
+                c = self.bot.get_channel(c)
+                if c:
+                    embed = discord.Embed(colour=c.guild.me.top_role.colour, title='Queue ended.')
+                    await c.send(embed=embed)
+
+
+    @commands.group()
+    @checks.is_owner()
+    async def audioset(self, ctx):
+        """Music configuration options."""
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help()
+
+    @audioset.command()
+    async def notify(self, ctx):
+        """Toggle song announcement and other bot messages."""
+        notify = await self.config.guild(ctx.guild).notify()
+        await self.config.guild(ctx.guild).notify.set(not notify)
+        get_notify = await self.config.guild(ctx.guild).notify()
+        await self._embed_msg(ctx, "Verbose mode on: {}.".format(get_notify))
+
+    @checks.is_owner()
+    @audioset.command()
+    async def status(self, ctx):
+        """Enables/disables songs' titles as status."""
+        status = await self.config.status()
+        await self.config.status.set(not status)
+        get_status = await self.config.status()
+        await self._embed_msg(ctx, "Song titles as status: {}.".format(get_status))
 
     @commands.command()
     async def audiostats(self, ctx):
         """Audio stats."""
-        servers = await self._get_playing()
-        await self._embed_msg(ctx, 'Playing music in {} servers.'.format(servers))
+        server_num = self.bot.lavalink.players.get_playing()
+        server_ids = self.bot.lavalink.players._players
+        server_list = []
+        for k, v in server_ids.items():
+            guild_id = k
+            player = v
+            try:
+                server_list.append(self.bot.get_guild(guild_id).name + ": **[{}]({})**".format(v.current.title, v.current.uri))
+            except AttributeError:
+                server_list.append(self.bot.get_guild(guild_id).name + ": Connected, but no current song.")
+            servers = '\n'.join(server_list)
+        if server_list == []:
+            servers = "Not connected anywhere."
+        embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Playing in {} servers:'.format(server_num), description=servers)
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    async def bump(self, ctx, index: int):
+        """Bump a song number to the top of the queue."""
+        player = self.bot.lavalink.players.get(ctx.guild.id)
+
+        if not player.queue:
+            return await self._embed_msg(ctx, 'Nothing queued.')
+
+        if index > len(player.queue) or index < 1:
+            return await self._embed_msg(ctx, 'Song number must be greater than 1 and within the queue limit.')
+
+        bump_index = index - 1
+        bump_song = self.bot.lavalink.players.get(ctx.guild.id).queue[bump_index]
+        player.queue.insert(0, bump_song)
+        removed = player.queue.pop(index)
+        await self._embed_msg(ctx, 'Moved **' + removed.title + '** to the top of the queue.')
 
     @commands.command(aliases=['dc'])
     async def disconnect(self, ctx):
         """Disconnect from the voice channel."""
-        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
+        player = self.bot.lavalink.players.get(ctx.guild.id)
         await player.disconnect()
 
     @commands.command(aliases=['np', 'n', 'song'])
     async def now(self, ctx):
         """Now playing."""
-        expected = ['⏮', '⏹', '⏸', '▶', '⏭']
+        expected = ['⏹', '⏸', '⏭']
         emoji = {
-            'back': '⏮',
             'stop': '⏹',
             'pause': '⏸',
-            'play': '▶',
             'next': '⏭'
         }
-        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
+        player = self.bot.lavalink.players.get(ctx.guild.id)
         song = 'Nothing'
         if player.current:
             arrow = await self._draw_time(ctx)
@@ -89,7 +170,7 @@ class Music:
             return r.message.id == message.id and u == ctx.message.author
 
         if player.current:
-            for i in range(5):
+            for i in range(3):
                 await message.add_reaction(expected[i])
         try:
             (r, u) = await self.bot.wait_for('reaction_add', check=check, timeout=10.0)
@@ -100,19 +181,12 @@ class Music:
         reacts = {v: k for k, v in emoji.items()}
         react = reacts[r.emoji]
 
-        if react == 'back':
-            await self._clear_react(message)
-            pass
-        elif react == 'stop':
+        if react == 'stop':
             await self._clear_react(message)
             await ctx.invoke(self.stop)
         elif react == 'pause':
             await self._clear_react(message)
             await ctx.invoke(self.pause)
-        elif react == 'play':
-            await self._clear_react(message)
-            if player.paused:
-                await ctx.invoke(self.pause)
         elif react == 'next':
             await self._clear_react(message)
             await ctx.invoke(self.skip)
@@ -120,48 +194,57 @@ class Music:
     @commands.command(aliases=['resume'])
     async def pause(self, ctx):
         """Pause and resume."""
-        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
-        if not ctx.author.voice or (player.is_connected() and ctx.author.voice.channel.id != int(player.channel_id)):
+        player = self.bot.lavalink.players.get(ctx.guild.id)
+        if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, 'You must be in the voice channel to pause the music.')
 
-        if not player.is_playing():
+        if not player.is_playing:
             return
+
         if player.paused:
-            await player.set_paused(False)
+            await player.set_pause(False)
             await self._embed_msg(ctx, 'Music resumed.')
         else:
-            await player.set_paused(True)
+            await player.set_pause(True)
             await self._embed_msg(ctx, 'Music paused.')
 
     @commands.command(aliases=['p'])
     async def play(self, ctx, *, query):
         """Play a URL or search for a song."""
-        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
-        if not ctx.author.voice or (player.is_connected() and ctx.author.voice.channel.id != int(player.channel_id)):
+        player = self.bot.lavalink.players.get(ctx.guild.id)
+        if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, 'You must be in the voice channel to use the play command.')
-        if not player.is_connected():
-            await player.connect(channel_id=ctx.author.voice.channel.id)
+
+        player.store('channel', ctx.channel.id)
+        player.store('guild', ctx.guild.id)
+
+        if not player.is_connected:
+            await player.connect(ctx.author.voice.channel.id)
+
         query = query.strip('<>')
         if not query.startswith('http'):
             query = 'ytsearch:{}'.format(query)
-        tracks = await self.lavalink.get_tracks(query)
+
+        tracks = await self.bot.lavalink.client.get_tracks(query)
         if not tracks:
             return await self._embed_msg(ctx, 'Nothing found 👀')
+
         if 'list' in query and 'ytsearch:' not in query:
             for track in tracks:
-                await player.add(requester=ctx.author.id, track=track, play=True)
+                await player.add_and_play(requester=ctx.author.id, track=track)
             embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Playlist Enqueued', description='Added {} tracks to the queue.'.format(len(tracks)))
         else:
-            await player.add(requester=ctx.author.id, track=tracks[0], play=True)
+            await player.add_and_play(requester=ctx.author.id, track=tracks[0])
             track_title = tracks[0]["info"]["title"]
             track_url = tracks[0]["info"]["uri"]
-            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Track Enqueued', description='[{}]({})'.format(track_title, track_url))
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Track Enqueued', description='[**{}**]({})'.format(track_title, track_url))
+
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['q'])
-    async def queue(self, ctx, page: int=None):
+    async def queue(self, ctx, page: int=1):
         """Lists the queue."""
-        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
+        player = self.bot.lavalink.players.get(ctx.guild.id)
         if not player.queue:
             return await self._embed_msg(ctx, 'There\'s nothing in the queue.')
 
@@ -170,7 +253,6 @@ class Music:
 
         items_per_page = 10
         pages = math.ceil(len(player.queue) / items_per_page)
-        page = lavalink.Utils.get_number(page)
 
         start = (page - 1) * items_per_page
         end = start + items_per_page
@@ -198,11 +280,11 @@ class Music:
     @commands.command()
     async def repeat(self, ctx):
         """Toggles repeat."""
-        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
-        if not ctx.author.voice or (player.is_connected() and ctx.author.voice.channel.id != int(player.channel_id)):
+        player = self.bot.lavalink.players.get(ctx.guild.id)
+        if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, 'You must be in the voice channel to toggle shuffle.')
 
-        if not player.is_playing():
+        if not player.is_playing:
             return await self._embed_msg(ctx, 'Nothing playing.')
 
         player.repeat = not player.repeat
@@ -211,9 +293,28 @@ class Music:
         return await self._embed_msg(ctx, title)
 
     @commands.command()
+    async def remove(self, ctx, index: int):
+        """Remove a specific song number from the queue."""
+        player = self.bot.lavalink.players.get(ctx.guild.id)
+
+        if not player.queue:
+            return await self._embed_msg(ctx, 'Nothing queued.')
+
+        if index > len(player.queue) or index < 1:
+            return await self._embed_msg(ctx, 'Song number must be greater than 1 and within the queue limit.')
+
+        index = index - 1
+        removed = player.queue.pop(index)
+
+        await self._embed_msg(ctx, 'Removed **' + removed.title + '** from the queue.')
+
+    @commands.command()
     async def search(self, ctx, *, query):
         """Pick a song with a search.
-        Use [p]search list <search term> to queue all songs."""
+        Use [p]search list <search term> to queue all songs.
+        Defaults to YouTube search. Use [p]search sc <song> 
+        to search SoundCloud songs.
+        """
         expected = ["1⃣", "2⃣", "3⃣", "4⃣", "5⃣", "⏪", "⏩"]
         emoji = {
             "one": "1⃣",
@@ -224,22 +325,27 @@ class Music:
             "back": "⏪",
             "next": "⏩"
         }
-        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
-        if not ctx.author.voice or (player.is_connected() and ctx.author.voice.channel.id != int(player.channel_id)):
+        player = self.bot.lavalink.players.get(ctx.guild.id)
+        player.store('channel', ctx.channel.id)
+        player.store('guild', ctx.guild.id)
+
+        if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, 'You must be in the voice channel to enqueue songs.')
-        if not player.is_connected():
-            await player.connect(channel_id=ctx.author.voice.channel.id)
+        if not player.is_connected:
+            await player.connect(ctx.author.voice.channel.id)
         query = query.strip('<>')
-        if not query.startswith('http'):
+        if query.startswith('sc'):
+            query.replace('sc ', '')
+            query = 'scsearch:{}'.format(query)
+        elif not query.startswith('http'):
             query = 'ytsearch:{}'.format(query)
-        tracks = await self.lavalink.get_tracks(query)
+        tracks = await self.bot.lavalink.client.get_tracks(query)
         if not tracks:
             return await self._embed_msg(ctx, 'Nothing found 👀')
-        if 'list' not in query and 'ytsearch:' in query:
+        if 'list' not in query and 'ytsearch:' or 'scsearch:' in query:
             page = 1
             items_per_page = 5
             pages = math.ceil(len(tracks) / items_per_page)
-            page = lavalink.Utils.get_number(page)
             start = (page - 1) * items_per_page
             end = start + items_per_page
 
@@ -276,6 +382,8 @@ class Music:
                 await self._search_button(ctx, message, tracks, entry=4)
 
             elif react == 'back':
+                page = page - 1
+
                 await self._clear_react(message)
                 return
             elif react == 'next':
@@ -283,26 +391,26 @@ class Music:
                 return
         else:
             for track in tracks:
-                await player.add(requester=ctx.author.id, track=track, play=True)
+                await player.add_and_play(requester=ctx.author.id, track=track)
             songembed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Queued {} track(s).'.format(len(tracks)))
             message = await ctx.send(embed=songembed)
 
     async def _search_button(self, ctx, message, tracks, entry: int):
-        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
+        player = self.bot.lavalink.players.get(ctx.guild.id)
         await self._clear_react(message)
-        await player.add(requester=ctx.author.id, track=tracks[entry], play=True)
+        await player.add_and_play(requester=ctx.author.id, track=tracks[entry])
         track_title = tracks[entry]["info"]["title"]
         track_url = tracks[entry]["info"]["uri"]
-        embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Track Enqueued', description='[{}]({})'.format(track_title, track_url))
+        embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Track Enqueued', description='[**{}**]({})'.format(track_title, track_url))
         return await ctx.send(embed=embed)
 
     @commands.command()
     async def seek(self, ctx, seconds: int=5):
         """Seeks ahead or behind on a track by seconds."""
-        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
-        if not ctx.author.voice or (player.is_connected() and ctx.author.voice.channel.id != int(player.channel_id)):
+        player = self.bot.lavalink.players.get(ctx.guild.id)
+        if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, 'You must be in the voice channel to use seek.')
-        if player.is_playing():
+        if player.is_playing:
             if player.current.stream:
                 return await self._embed_msg(ctx, 'Can\'t seek on a stream.')
             else:
@@ -314,11 +422,11 @@ class Music:
     @commands.command()
     async def shuffle(self, ctx):
         """Toggles shuffle."""
-        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
-        if not ctx.author.voice or (player.is_connected() and ctx.author.voice.channel.id != int(player.channel_id)):
+        player = self.bot.lavalink.players.get(ctx.guild.id)
+        if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, 'You must be in the voice channel to toggle shuffle.')
 
-        if not player.is_playing():
+        if not player.is_playing:
             return await self._embed_msg(ctx, 'Nothing playing.')
 
         player.shuffle = not player.shuffle
@@ -329,7 +437,7 @@ class Music:
     @commands.command(aliases=['forceskip', 'fs'])
     async def skip(self, ctx):
         """Skips to the next track."""
-        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
+        player = self.bot.lavalink.players.get(ctx.guild.id)
 
         if player.current is None:
             return await self._embed_msg(ctx, 'The player is stopped.')
@@ -350,45 +458,39 @@ class Music:
             else:
                 return await self._embed_msg(ctx, 'There\'s nothing in the queue.')
 
-        if not ctx.author.voice or (player.is_connected() and ctx.author.voice.channel.id != int(player.channel_id)):
+        if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, 'You must be in the voice channel to skip the music.')
 
         await player.skip()
-        if player.current:
-            song = '**[{}]({})**'.format(player.current.title, player.current.uri)
-            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Now Playing', description=song)
-            await ctx.send(embed=embed)
 
     @commands.command(aliases=['s'])
     async def stop(self, ctx):
         """Stops playback and clears the queue."""
-        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
-        if not ctx.author.voice or (player.is_connected() and ctx.author.voice.channel.id != int(player.channel_id)):
+        player = self.bot.lavalink.players.get(ctx.guild.id)
+        if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, 'You must be in the voice channel to stop the music.')
-        if player.is_playing():
+        if player.is_playing:
             await self._embed_msg(ctx, 'Stopping...')
-            player.queue = []
+            player.queue.clear()
             await player.stop()
 
     @commands.command(aliases=['vol'])
-    async def volume(self, ctx, volume=None):
-        """Sets the volume, 1 - 100."""
-        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
-        if not ctx.author.voice or (player.is_connected() and ctx.author.voice.channel.id != int(player.channel_id)):
+    async def volume(self, ctx, volume: int=None):
+        """Sets the volume, 1% - 150%."""
+        player = self.bot.lavalink.players.get(ctx.guild.id)
+        if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, 'You must be in the voice channel to change the volume.')
         if not volume:
             vol = player.volume
             embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Volume:', description=str(vol) + '%')
             return await ctx.send(embed=embed)
-        if not player.is_playing():
+        if not player.is_playing:
             return await self._embed_msg(ctx, 'Nothing playing.')
-        if not lavalink.Utils.is_number(volume):
-            return await self._embed_msg(ctx, 'You didn\'t specify a valid number.')
-        if int(volume) > 100:
-            volume = 100
-            await player.set_volume(int(volume))
+        if int(volume) > 150:
+            volume = 150
+            await player.set_volume(volume)
         else:
-            await player.set_volume(int(volume))
+            await player.set_volume(volume)
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Volume:', description=str(volume) + '%')
         await ctx.send(embed=embed)
 
@@ -427,7 +529,7 @@ class Music:
             return
 
     async def _draw_time(self, ctx):
-        player = await self.lavalink.get_player(guild_id=ctx.guild.id)
+        player = self.bot.lavalink.players.get(ctx.guild.id)
         pos = player.position
         dur = player.current.duration
         sections = 12
@@ -447,28 +549,5 @@ class Music:
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title=title)
         await ctx.send(embed=embed)
 
-    async def _get_playing(self):
-        return len([p for p in self.bot.players.values() if p.is_playing()])
-
-    async def on_voice_server_update(self, data):
-        self.state_keys.update({
-            'op': 'voiceUpdate',
-            'guildId': data.get('guild_id'),
-            'event': data
-        })
-
-        await self.verify_and_dispatch()
-
-    async def on_voice_state_update(self, member, before, after):
-        if member.id != self.bot.user.id:
-            return
-
-        await self.lavalink._update_voice(guild_id=member.guild.id, channel_id=after.channel.id)
-
-        self.state_keys.update({'sessionId': after.session_id})
-        await self.verify_and_dispatch()
-
-    async def verify_and_dispatch(self):
-        if all(k in self.state_keys for k in self.validator):
-            await self.lavalink.send(**self.state_keys)
-            self.state_keys.clear()
+    def __unload(self):
+        self.bot.lavalink.client.destroy()
