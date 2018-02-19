@@ -326,6 +326,9 @@ class Music:
             "next": "⏩"
         }
         player = self.bot.lavalink.players.get(ctx.guild.id)
+        player.store('channel', ctx.channel.id)
+        player.store('guild', ctx.guild.id)
+
         if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, 'You must be in the voice channel to enqueue songs.')
         if not player.is_connected:
