@@ -52,3 +52,4 @@ Known Bugs:
 - If disconnect is used on a server, it stops players on other servers. Those servers can use `[p]play` with no arguments to start the existing queue again. The help message for the command will show, but the player will start as well.
 - Playlist mixes from YouTube will only queue the first song. Playlist lists work fine.
 - If shuffle is enabled, [p]queue will list the queue with no shuffle (shuffle track is randomly picked from the existing queue).
+- Voice Chat Disconnects after connecting is caused by websockets < 4.0
