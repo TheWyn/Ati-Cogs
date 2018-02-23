@@ -51,4 +51,4 @@ Known Bugs:
 
 - Playlist mixes from YouTube will only queue the first song. Playlist lists work fine.
 - If shuffle is enabled, [p]queue will list the queue with no shuffle (shuffle track is randomly picked from the existing queue).
-- Voice Chat Disconnects after connecting is caused by websockets < 4.0
+- Voice chat disconnects after connecting or the cog hanging at 0:00 is caused by websockets < 4.0
