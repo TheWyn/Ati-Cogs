@@ -7,6 +7,8 @@ import math
 from discord.ext import commands
 from redbot.core import Config, checks
 
+__version__ = "2.0.2.4.c"
+
 
 class Music:
     def __init__(self, bot, loop: asyncio.BaseEventLoop):
@@ -44,10 +46,15 @@ class Music:
     def lavalink(self):
         return self._lavalink
 
-
     async def track_hook(self, player, event):
         notify = await self.config.guild(self.bot.get_guild(player.fetch('guild'))).notify()
         status = await self.config.status()
+        playing_servers = self.bot.lavalink.players.get_playing()
+        get_players = [p for p in self.bot.lavalink.players._players.values() if p.is_playing]
+        try:
+            get_single_title = get_players[0].current.title
+        except IndexError:
+            pass
 
         if event == 'TrackStartEvent' and notify:
             c = player.fetch('channel')
@@ -58,13 +65,12 @@ class Music:
                     await c.send(embed=embed)
 
         if event == 'TrackStartEvent' and status:
-            playing_servers = self.bot.lavalink.players.get_playing()
             if playing_servers > 1:
                 await self.bot.change_presence(game=discord.Game(name='music in {} servers'.format(playing_servers)))
             else:
-                await self.bot.change_presence(game=discord.Game(name=str(player.current.title), type=2))
+                await self.bot.change_presence(game=discord.Game(name=get_single_title, type=2))
 
-        elif event == 'QueueEndEvent' and notify:
+        if event == 'QueueEndEvent' and notify:
             c = player.fetch('channel')
             if c:
                 c = self.bot.get_channel(c)
@@ -72,6 +78,14 @@ class Music:
                     embed = discord.Embed(colour=c.guild.me.top_role.colour, title='Queue ended.')
                     await c.send(embed=embed)
 
+        if event == 'QueueEndEvent' and status:
+            await asyncio.sleep(1)
+            if playing_servers == 0:
+                await self.bot.change_presence(game=None)
+            if playing_servers == 1:
+                await self.bot.change_presence(game=discord.Game(name=get_single_title, type=2))
+            if playing_servers > 1:
+                await self.bot.change_presence(game=discord.Game(name='music in {} servers'.format(playing_servers)))
 
     @commands.group()
     @checks.is_owner()
@@ -88,8 +102,30 @@ class Music:
         get_notify = await self.config.guild(ctx.guild).notify()
         await self._embed_msg(ctx, "Verbose mode on: {}.".format(get_notify))
 
-    @checks.is_owner()
     @audioset.command()
+    async def settings(self, ctx):
+        """Show the current settings."""
+        player = self.bot.lavalink.players.get(ctx.guild.id)
+        notify = await self.config.guild(ctx.guild).notify()
+        status = await self.config.status()
+        shuffle = player.shuffle
+        repeat = player.repeat
+
+        msg = "```ini\n"
+        msg += "----Guild Settings----\n"
+        msg += "audioset notify: [{}]\n".format(notify)
+        msg += "audioset status: [{}]\n".format(status)
+        msg += "Repeat:          [{}]\n".format(repeat)
+        msg += "Shuffle:         [{}]\n".format(shuffle)
+        msg += "---Lavalink Settings---\n"
+        msg += "Cog version: {}\n".format(__version__)
+        msg += "Pip version: {}\n```".format(lavalink.__version__)
+
+        embed = discord.Embed(colour=ctx.guild.me.top_role.colour, description=msg)
+        return await ctx.send(embed=embed)
+
+    @audioset.command()
+    @checks.is_owner()
     async def status(self, ctx):
         """Enables/disables songs' titles as status."""
         status = await self.config.status()
@@ -271,7 +307,7 @@ class Music:
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Queue for ' + ctx.guild.name, description=queue_list)
 
         if player.current.stream:
-            embed.set_footer(text='Page {}/{} | {len()} tracks | Currently livestreaming {}'.format(page, pages, len(player.queue), player.current.title))
+            embed.set_footer(text='Page {}/{} | {} tracks | Currently livestreaming {}'.format(page, pages, len(player.queue), player.current.title))
             await ctx.send(embed=embed)
         else:
             embed.set_footer(text='Page {}/{} | {} tracks | {} left on {}'.format(page, pages, len(player.queue), time_remain, player.current.title))
@@ -312,8 +348,6 @@ class Music:
     async def search(self, ctx, *, query):
         """Pick a song with a search.
         Use [p]search list <search term> to queue all songs.
-        Defaults to YouTube search. Use [p]search sc <song> 
-        to search SoundCloud songs.
         """
         expected = ["1⃣", "2⃣", "3⃣", "4⃣", "5⃣", "⏪", "⏩"]
         emoji = {
@@ -334,10 +368,7 @@ class Music:
         if not player.is_connected:
             await player.connect(ctx.author.voice.channel.id)
         query = query.strip('<>')
-        if query.startswith('sc'):
-            query.replace('sc ', '')
-            query = 'scsearch:{}'.format(query)
-        elif not query.startswith('http'):
+        if not query.startswith('http'):
             query = 'ytsearch:{}'.format(query)
         tracks = await self.bot.lavalink.client.get_tracks(query)
         if not tracks:
@@ -473,6 +504,7 @@ class Music:
             await self._embed_msg(ctx, 'Stopping...')
             player.queue.clear()
             await player.stop()
+            await self.bot.lavalink.client._trigger_event("QueueEndEvent", ctx.guild.id)
 
     @commands.command(aliases=['vol'])
     async def volume(self, ctx, volume: int=None):
