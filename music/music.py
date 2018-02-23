@@ -7,7 +7,7 @@ import math
 from discord.ext import commands
 from redbot.core import Config, checks
 
-__version__ = "2.0.2.4.c"
+__version__ = “2.0.2.4.d”
 
 
 class Music:
@@ -318,7 +318,7 @@ class Music:
         """Toggles repeat."""
         player = self.bot.lavalink.players.get(ctx.guild.id)
         if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
-            return await self._embed_msg(ctx, 'You must be in the voice channel to toggle shuffle.')
+            return await self._embed_msg(ctx, 'You must be in the voice channel to toggle repeat.')
 
         if not player.is_playing:
             return await self._embed_msg(ctx, 'Nothing playing.')
@@ -367,9 +367,13 @@ class Music:
             return await self._embed_msg(ctx, 'You must be in the voice channel to enqueue songs.')
         if not player.is_connected:
             await player.connect(ctx.author.voice.channel.id)
+
         query = query.strip('<>')
-        if not query.startswith('http'):
+        if query.startswith('sc '):
+            query = 'scsearch:{}'.format(query.strip('sc '))
+        elif not query.startswith('http') or query.startswith('sc '):
             query = 'ytsearch:{}'.format(query)
+
         tracks = await self.bot.lavalink.client.get_tracks(query)
         if not tracks:
             return await self._embed_msg(ctx, 'Nothing found 👀')
