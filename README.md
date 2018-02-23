@@ -15,7 +15,7 @@ cowsay - Say it with a cow. Or think it with a cow.
 - `[p]repo add aticogs https://github.com/atiwiex/Ati-Cogs v3`
 - `[p]cog install aticogs music`
 
-- `pip install lavalink`
+- `pip install lavalink==2.0.2.4`
 
 - Install Java.
 - Get the latest Lavalink jar and server. https://ci.fredboat.com/viewLog.html?buildId=3005&tab=artifacts&buildTypeId=Lavalink_Build&guest=1
