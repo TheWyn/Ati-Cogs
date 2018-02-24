@@ -24,7 +24,8 @@ class Music:
         }
 
         default_guild = {
-            "notify": False
+            "notify": False,
+            "shuffle": False
         }
 
         self.config.register_guild(**default_guild)
@@ -109,7 +110,7 @@ class Music:
         player = self.bot.lavalink.players.get(ctx.guild.id)
         notify = await self.config.guild(ctx.guild).notify()
         status = await self.config.status()
-        shuffle = player.shuffle
+        shuffle = await self.config.guild(ctx.guild).shuffle()
         repeat = player.repeat
 
         msg = '```ini\n'
@@ -146,7 +147,7 @@ class Music:
             try:
                 server_list.append(self.bot.get_guild(guild_id).name + ': **[{}]({})**'.format(v.current.title, v.current.uri))
             except AttributeError:
-                server_list.append(self.bot.get_guild(guild_id).name + ': Connected, but no current song.')
+                pass
             servers = '\n'.join(server_list)
         if server_list == []:
             servers = 'Not connected anywhere.'
@@ -285,11 +286,15 @@ class Music:
     async def play(self, ctx, *, query):
         """Play a URL or search for a song."""
         player = self.bot.lavalink.players.get(ctx.guild.id)
+        shuffle = await self.config.guild(ctx.guild).shuffle()
         if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, 'You must be in the voice channel to use the play command.')
 
         player.store('channel', ctx.channel.id)
         player.store('guild', ctx.guild.id)
+
+        if player.shuffle != shuffle:
+            player.shuffle = shuffle
 
         if not player.is_connected:
             await player.connect(ctx.author.voice.channel.id)
@@ -305,7 +310,7 @@ class Music:
         if 'list' in query and 'ytsearch:' not in query:
             for track in tracks:
                 await player.add_and_play(requester=ctx.author.id, track=track)
-            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, description='Queued {} track(s).'.format(len(tracks)))
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Playlist Enqueued', description='Added {} tracks to the queue.'.format(len(tracks)))
         else:
             await player.add_and_play(requester=ctx.author.id, track=tracks[0])
             track_title = tracks[0]["info"]["title"]
@@ -462,6 +467,9 @@ class Music:
                 await self._clear_react(message)
                 return
         else:
+            shuffle = await self.config.guild(ctx.guild).shuffle()
+            if player.shuffle != shuffle:
+                player.shuffle = shuffle
             for track in tracks:
                 await player.add_and_play(requester=ctx.author.id, track=track)
             songembed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Queued {} track(s).'.format(len(tracks)))
@@ -501,10 +509,12 @@ class Music:
         if not player.is_playing:
             return await self._embed_msg(ctx, 'Nothing playing.')
 
-        player.shuffle = not player.shuffle
-
-        title = ('Shuffle ' + ('enabled.' if player.shuffle else 'disabled.'))
-        return await self._embed_msg(ctx, title)
+        shuffle = await self.config.guild(ctx.guild).shuffle()
+        await self.config.guild(ctx.guild).shuffle.set(not shuffle)
+        shuffle = await self.config.guild(ctx.guild).shuffle()
+        if player.shuffle != shuffle:
+            player.shuffle = shuffle
+        await self._embed_msg(ctx, 'Shuffle songs: {}.'.format(shuffle))
 
     @commands.command(aliases=['forceskip', 'fs'])
     async def skip(self, ctx):
