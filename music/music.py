@@ -214,8 +214,7 @@ class Music:
         try:
             (r, u) = await self.bot.wait_for('reaction_add', check=check, timeout=10.0)
         except asyncio.TimeoutError:
-            await self._clear_react(message)
-            return
+            return await self._clear_react(message)
 
         reacts = {v: k for k, v in emoji.items()}
         react = reacts[r.emoji]
@@ -253,8 +252,8 @@ class Music:
         queue_tracks = self.bot.lavalink.players.get(ctx.guild.id).queue
         queue_len = len(queue_tracks)
         requesters = {'total': 0, 'users': {}}
-        for i in range(queue_len):
-            req_username = self.bot.get_user(queue_tracks[i].requester).name
+
+        async def _usercount(req_username):
             if req_username in requesters['users']:
                 requesters['users'][req_username]['songcount'] += 1
                 requesters['total'] += 1
@@ -263,19 +262,24 @@ class Music:
                 requesters['users'][req_username]['songcount'] = 1
                 requesters['total'] += 1
 
+        for i in range(queue_len):
+            req_username = self.bot.get_user(queue_tracks[i].requester).name
+            await _usercount(req_username)
+        try:
+            req_username = self.bot.get_user(self.bot.lavalink.players.get(ctx.guild.id).current.requester).name
+            await _usercount(req_username)
+        except AttributeError:
+            return await self._embed_msg(ctx, 'Nothing in the queue.')
+	
         for req_username in requesters['users']:
             percentage = float(requesters['users'][req_username]['songcount']) / float(requesters['total'])
             requesters['users'][req_username]['percent'] = round(percentage * 100, 1)
 
         top_queue_users = heapq.nlargest(20, [(x, requesters['users'][x][y]) for x in requesters['users'] for y in requesters['users'][x] if y == 'percent'], key=lambda x: x[1])
         queue_user = ["{}: {:g}%".format(x[0], x[1]) for x in top_queue_users]
-
-        if not queue_user:
-            await self._embed_msg(ctx, 'Nothing in the queue.')
-        else:
-            queue_user_list = '\n'.join(queue_user)
-            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Queued songs:', description=queue_user_list)
-            await ctx.send(embed=embed)
+        queue_user_list = '\n'.join(queue_user)
+        embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Queued and playing songs:', description=queue_user_list)
+        await ctx.send(embed=embed)
 
     @commands.command(aliases=['p'])
     async def play(self, ctx, *, query):
@@ -301,7 +305,7 @@ class Music:
         if 'list' in query and 'ytsearch:' not in query:
             for track in tracks:
                 await player.add_and_play(requester=ctx.author.id, track=track)
-            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Playlist Enqueued', description='Added {} tracks to the queue.'.format(len(tracks)))
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, description='Queued {} track(s).'.format(len(tracks)))
         else:
             await player.add_and_play(requester=ctx.author.id, track=tracks[0])
             track_title = tracks[0]["info"]["title"]
