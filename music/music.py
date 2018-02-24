@@ -1,13 +1,14 @@
-# Lavalink.py for Red v3 beta 7+
+# Lavalink.py cog for Red v3 beta 7+
 # Cog base thanks to Kromatic's example cog.
 import asyncio
 import discord
+import heapq
 import lavalink
 import math
 from discord.ext import commands
 from redbot.core import Config, checks
 
-__version__ = “2.0.2.4.d”
+__version__ = "2.0.2.4.d"
 
 
 class Music:
@@ -100,7 +101,7 @@ class Music:
         notify = await self.config.guild(ctx.guild).notify()
         await self.config.guild(ctx.guild).notify.set(not notify)
         get_notify = await self.config.guild(ctx.guild).notify()
-        await self._embed_msg(ctx, "Verbose mode on: {}.".format(get_notify))
+        await self._embed_msg(ctx, 'Verbose mode on: {}.'.format(get_notify))
 
     @audioset.command()
     async def settings(self, ctx):
@@ -111,15 +112,15 @@ class Music:
         shuffle = player.shuffle
         repeat = player.repeat
 
-        msg = "```ini\n"
-        msg += "----Guild Settings----\n"
-        msg += "audioset notify: [{}]\n".format(notify)
-        msg += "audioset status: [{}]\n".format(status)
-        msg += "Repeat:          [{}]\n".format(repeat)
-        msg += "Shuffle:         [{}]\n".format(shuffle)
-        msg += "---Lavalink Settings---\n"
-        msg += "Cog version: {}\n".format(__version__)
-        msg += "Pip version: {}\n```".format(lavalink.__version__)
+        msg = '```ini\n'
+        msg += '----Guild Settings----\n'
+        msg += 'audioset notify: [{}]\n'.format(notify)
+        msg += 'audioset status: [{}]\n'.format(status)
+        msg += 'Repeat:          [{}]\n'.format(repeat)
+        msg += 'Shuffle:         [{}]\n'.format(shuffle)
+        msg += '---Lavalink Settings---\n'
+        msg += 'Cog version: {}\n'.format(__version__)
+        msg += 'Pip version: {}\n```'.format(lavalink.__version__)
 
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, description=msg)
         return await ctx.send(embed=embed)
@@ -131,7 +132,7 @@ class Music:
         status = await self.config.status()
         await self.config.status.set(not status)
         get_status = await self.config.status()
-        await self._embed_msg(ctx, "Song titles as status: {}.".format(get_status))
+        await self._embed_msg(ctx, 'Song titles as status: {}'.format(get_status))
 
     @commands.command()
     async def audiostats(self, ctx):
@@ -143,12 +144,12 @@ class Music:
             guild_id = k
             player = v
             try:
-                server_list.append(self.bot.get_guild(guild_id).name + ": **[{}]({})**".format(v.current.title, v.current.uri))
+                server_list.append(self.bot.get_guild(guild_id).name + ': **[{}]({})**'.format(v.current.title, v.current.uri))
             except AttributeError:
-                server_list.append(self.bot.get_guild(guild_id).name + ": Connected, but no current song.")
+                server_list.append(self.bot.get_guild(guild_id).name + ': Connected, but no current song.')
             servers = '\n'.join(server_list)
         if server_list == []:
-            servers = "Not connected anywhere."
+            servers = 'Not connected anywhere.'
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Playing in {} servers:'.format(server_num), description=servers)
         await ctx.send(embed=embed)
 
@@ -174,6 +175,8 @@ class Music:
         """Disconnect from the voice channel."""
         player = self.bot.lavalink.players.get(ctx.guild.id)
         await player.disconnect()
+        player.queue.clear()
+        await self.bot.lavalink.client._trigger_event("QueueEndEvent", ctx.guild.id)
 
     @commands.command(aliases=['np', 'n', 'song'])
     async def now(self, ctx):
@@ -243,6 +246,36 @@ class Music:
         else:
             await player.set_pause(True)
             await self._embed_msg(ctx, 'Music paused.')
+
+    @commands.command()
+    async def percent(self, ctx):
+        """Queue percentage."""
+        queue_tracks = self.bot.lavalink.players.get(ctx.guild.id).queue
+        queue_len = len(queue_tracks)
+        requesters = {'total': 0, 'users': {}}
+        for i in range(queue_len):
+            req_username = self.bot.get_user(queue_tracks[i].requester).name
+            if req_username in requesters['users']:
+                requesters['users'][req_username]['songcount'] += 1
+                requesters['total'] += 1
+            else:
+                requesters['users'][req_username] = {}
+                requesters['users'][req_username]['songcount'] = 1
+                requesters['total'] += 1
+
+        for req_username in requesters['users']:
+            percentage = float(requesters['users'][req_username]['songcount']) / float(requesters['total'])
+            requesters['users'][req_username]['percent'] = round(percentage * 100, 1)
+
+        top_queue_users = heapq.nlargest(20, [(x, requesters['users'][x][y]) for x in requesters['users'] for y in requesters['users'][x] if y == 'percent'], key=lambda x: x[1])
+        queue_user = ["{}: {:g}%".format(x[0], x[1]) for x in top_queue_users]
+
+        if not queue_user:
+            await self._embed_msg(ctx, 'Nothing in the queue.')
+        else:
+            queue_user_list = '\n'.join(queue_user)
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Queued songs:', description=queue_user_list)
+            await ctx.send(embed=embed)
 
     @commands.command(aliases=['p'])
     async def play(self, ctx, *, query):
@@ -542,21 +575,21 @@ class Music:
         """Set the lavalink server host."""
         await self.config.host.set(host)
         get_host = await self.config.host()
-        await self._embed_msg(ctx, "Host set to {}.".format(get_host))
+        await self._embed_msg(ctx, 'Host set to {}.'.format(get_host))
 
     @llsetup.command()
     async def password(self, ctx, passw):
         """Set the lavalink server password."""
         await self.config.passw.set(str(passw))
         get_passw = await self.config.passw()
-        await self._embed_msg(ctx, "Server password set to {}.".format(get_passw))
+        await self._embed_msg(ctx, 'Server password set to {}.'.format(get_passw))
 
     @llsetup.command()
     async def port(self, ctx, port):
         """Set the lavalink server port."""
         await self.config.port.set(str(port))
         get_port = await self.config.port()
-        await self._embed_msg(ctx, "Port set to {}.".format(get_port))
+        await self._embed_msg(ctx, 'Port set to {}.'.format(get_port))
 
     async def _clear_react(self, message):
         try:
