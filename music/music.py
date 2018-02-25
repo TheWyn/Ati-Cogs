@@ -8,7 +8,7 @@ import math
 from discord.ext import commands
 from redbot.core import Config, checks
 
-__version__ = "2.0.2.4.d"
+__version__ = "2.0.2.4.e"
 
 
 class Music:
@@ -25,6 +25,7 @@ class Music:
 
         default_guild = {
             "notify": False,
+            "repeat": False,
             "shuffle": False
         }
 
@@ -50,6 +51,7 @@ class Music:
 
     async def track_hook(self, player, event):
         notify = await self.config.guild(self.bot.get_guild(player.fetch('guild'))).notify()
+        repeat = await self.config.guild(self.bot.get_guild(player.fetch('guild'))).repeat()
         status = await self.config.status()
         playing_servers = self.bot.lavalink.players.get_playing()
         get_players = [p for p in self.bot.lavalink.players._players.values() if p.is_playing]
@@ -57,6 +59,15 @@ class Music:
             get_single_title = get_players[0].current.title
         except IndexError:
             pass
+
+        if event == 'TrackStartEvent' and repeat:
+            if player.fetch('song') is None:
+                pass
+            else:
+                last_track = await self.bot.lavalink.client.get_tracks(player.fetch('song'))
+                await player.add_and_play(player.fetch('requester').id, last_track[0])
+            player.store('song', self.bot.lavalink.players.get(player.fetch('guild')).current.uri)
+            player.store('requester', self.bot.get_user(self.bot.lavalink.players.get(player.fetch('guild')).current.requester))
 
         if event == 'TrackStartEvent' and notify:
             c = player.fetch('channel')
@@ -111,7 +122,7 @@ class Music:
         notify = await self.config.guild(ctx.guild).notify()
         status = await self.config.status()
         shuffle = await self.config.guild(ctx.guild).shuffle()
-        repeat = player.repeat
+        repeat = await self.config.guild(ctx.guild).repeat()
 
         msg = '```ini\n'
         msg += '----Guild Settings----\n'
@@ -271,7 +282,7 @@ class Music:
             await _usercount(req_username)
         except AttributeError:
             return await self._embed_msg(ctx, 'Nothing in the queue.')
-	
+    
         for req_username in requesters['users']:
             percentage = float(requesters['users'][req_username]['songcount']) / float(requesters['total'])
             requesters['users'][req_username]['percent'] = round(percentage * 100, 1)
@@ -365,10 +376,10 @@ class Music:
         if not player.is_playing:
             return await self._embed_msg(ctx, 'Nothing playing.')
 
-        player.repeat = not player.repeat
-
-        title = ('Repeat ' + ('enabled.' if player.repeat else 'disabled.'))
-        return await self._embed_msg(ctx, title)
+        repeat = await self.config.guild(ctx.guild).repeat()
+        await self.config.guild(ctx.guild).repeat.set(not repeat)
+        get_repeat = await self.config.guild(ctx.guild).repeat()
+        await self._embed_msg(ctx, 'Repeat songs: {}.'.format(get_repeat))
 
     @commands.command()
     async def remove(self, ctx, index: int):
