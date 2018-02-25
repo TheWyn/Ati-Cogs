@@ -8,7 +8,7 @@ import math
 from discord.ext import commands
 from redbot.core import Config, checks
 
-__version__ = "2.0.2.4.e"
+__version__ = "2.0.2.4.f"
 
 
 class Music:
@@ -188,6 +188,8 @@ class Music:
         player = self.bot.lavalink.players.get(ctx.guild.id)
         await player.disconnect()
         player.queue.clear()
+        player.store('song', None)
+        player.store('requester', None)
         await self.bot.lavalink.client._trigger_event("QueueEndEvent", ctx.guild.id)
 
     @commands.command(aliases=['np', 'n', 'song'])
@@ -212,7 +214,7 @@ class Music:
             song = 'Nothing.'
         else:
             req_user = self.bot.get_user(player.current.requester)
-            song = '**[{}]({})**\nRequested by: **{}**\n{}\n({}/{})'.format(player.current.title, player.current.uri, req_user, arrow, pos, dur)
+            song = '**[{}]({})**\nRequested by: **{}**\n{}`{}`/`{}`'.format(player.current.title, player.current.uri, req_user, arrow, pos, dur)
 
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Now Playing', description=song)
         message = await ctx.send(embed=embed)
@@ -282,7 +284,7 @@ class Music:
             await _usercount(req_username)
         except AttributeError:
             return await self._embed_msg(ctx, 'Nothing in the queue.')
-    
+
         for req_username in requesters['users']:
             percentage = float(requesters['users'][req_username]['songcount']) / float(requesters['total'])
             requesters['users'][req_username]['percent'] = round(percentage * 100, 1)
@@ -333,6 +335,8 @@ class Music:
     @commands.command(aliases=['q'])
     async def queue(self, ctx, page: int=1):
         """Lists the queue."""
+        shuffle = await self.config.guild(ctx.guild).shuffle()
+        repeat = await self.config.guild(ctx.guild).repeat()
         player = self.bot.lavalink.players.get(ctx.guild.id)
         if not player.queue:
             return await self._embed_msg(ctx, 'There\'s nothing in the queue.')
@@ -342,29 +346,42 @@ class Music:
 
         items_per_page = 10
         pages = math.ceil(len(player.queue) / items_per_page)
-
         start = (page - 1) * items_per_page
         end = start + items_per_page
 
         queue_list = ''
+        arrow = await self._draw_time(ctx)
+        pos = lavalink.Utils.format_time(player.position)
+
+        if player.current.stream:
+            dur = 'LIVE'
+        else:
+            dur = lavalink.Utils.format_time(player.current.duration)
+
+        if player.current.stream:
+            queue_list += '**Currently livestreaming:** [**{}**]({})\nRequested by: **{}**\n\n{}`{}`/`{}`\n\n'.format(player.current.title, player.current.uri, self.bot.get_user(player.current.requester), arrow, pos, dur)
+        else:
+            queue_list += 'Playing: [**{}**]({})\nRequested by: **{}**\n\n{}`{}`/`{}`\n\n'.format(player.current.title, player.current.uri, self.bot.get_user(player.current.requester), arrow, pos, dur)
 
         for i, track in enumerate(player.queue[start:end], start=start):
             req_user = self.bot.get_user(track.requester)
             next = i + 1
             queue_list += '`{}.` [**{}**]({}), requested by **{}**\n'.format(next, track.title, track.uri, req_user)
 
-        pos = player.position
-        dur = player.current.duration
-        remain = dur - pos
-        time_remain = lavalink.Utils.format_time(remain)
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Queue for ' + ctx.guild.name, description=queue_list)
-
-        if player.current.stream:
-            embed.set_footer(text='Page {}/{} | {} tracks | Currently livestreaming {}'.format(page, pages, len(player.queue), player.current.title))
-            await ctx.send(embed=embed)
+        if not player.current.stream:
+            remain = player.current.duration - player.position
         else:
-            embed.set_footer(text='Page {}/{} | {} tracks | {} left on {}'.format(page, pages, len(player.queue), time_remain, player.current.title))
-            await ctx.send(embed=embed)
+            remain = 0
+        queue_duration = await self._queue_duration(ctx)
+        queue_total_duration = lavalink.Utils.format_time(remain + queue_duration)
+        text = 'Page {}/{} | {} tracks, {} remaining'.format(page, pages, len(player.queue), queue_total_duration)
+        if repeat:
+            text += ' | Repeat: \N{WHITE HEAVY CHECK MARK}'
+        if shuffle:
+            text += ' | Shuffle: \N{WHITE HEAVY CHECK MARK}'
+        embed.set_footer(text=text)
+        await ctx.send(embed=embed)
 
     @commands.command()
     async def repeat(self, ctx):
@@ -566,6 +583,8 @@ class Music:
             await self._embed_msg(ctx, 'Stopping...')
             player.queue.clear()
             await player.stop()
+            player.store('song', None)
+            player.store('requester', None)
             await self.bot.lavalink.client._trigger_event("QueueEndEvent", ctx.guild.id)
 
     @commands.command(aliases=['vol'])
@@ -624,24 +643,36 @@ class Music:
 
     async def _draw_time(self, ctx):
         player = self.bot.lavalink.players.get(ctx.guild.id)
+        paused = player.paused
         pos = player.position
         dur = player.current.duration
         sections = 12
         loc_time = round((pos / dur) * sections)
-        bar = ':white_small_square:'
-        seek = ':small_blue_diamond:'
-        msg = '|'
+        bar = '\N{BOX DRAWINGS HEAVY HORIZONTAL}'
+        seek = '\N{RADIO BUTTON}'
+        if paused:
+            msg = '\N{DOUBLE VERTICAL BAR}'
+        else:
+            msg = '\N{BLACK RIGHT-POINTING TRIANGLE}'
         for i in range(sections):
             if i == loc_time:
                 msg += seek
             else:
                 msg += bar
-        msg += '|'
         return msg
 
     async def _embed_msg(self, ctx, title):
         embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title=title)
         await ctx.send(embed=embed)
+
+    async def _queue_duration(self, ctx):
+        player = self.bot.lavalink.players.get(ctx.guild.id)
+        duration = []
+        for i in range(len(player.queue)):
+            if not player.queue[i].stream:
+                duration.append(player.queue[i].duration)
+            total_length = sum(duration)
+        return total_length
 
     def __unload(self):
         self.bot.lavalink.client.destroy()
