@@ -31,7 +31,7 @@ cowsay - Say it with a cow. Or think it with a cow.
 ### If you are a current user:
 
 - Thank you for helping to test and give feedback!
-- Upgrade Red to the latest beta (beta 7+)
+- Upgrade Red to the latest beta (beta 9+)
 - run `pip install -U lavalink==2.0.2.9`
 - Replace your current Lavalink jar files: https://ci.fredboat.com/viewLog.html?buildId=3005&tab=artifacts&buildTypeId=Lavalink_Build&guest=1
 

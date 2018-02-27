@@ -245,11 +245,11 @@ class Music:
 
         if player.paused:
             await player.set_pause(False)
-            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Resumed Song', description=player.current.title)
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Track Resumed', description='**[{}]({})**'.format(player.current.title, player.current.uri))
             message = await ctx.send(embed=embed)
         else:
             await player.set_pause(True)
-            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Paused Song', description=player.current.title)
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Track Paused', description='**[{}]({})**'.format(player.current.title, player.current.uri))
             message = await ctx.send(embed=embed)
 
     @commands.command()
@@ -292,6 +292,7 @@ class Music:
         """Play a URL or search for a song."""
         player = self.bot.lavalink.players.get(ctx.guild.id)
         shuffle = await self.config.guild(ctx.guild).shuffle()
+
         if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, 'You must be in the voice channel to use the play command.')
 
@@ -326,7 +327,6 @@ class Music:
             embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Track Enqueued', description='[**{}**]({})'.format(track_title, track_url))
             if not shuffle and queue_duration > 0:
                 embed.set_footer(text='{} until track playback'.format(queue_total_duration))
-
         await ctx.send(embed=embed)
 
         if not player.is_playing:
@@ -573,7 +573,7 @@ class Music:
         if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, 'You must be in the voice channel to skip the music.')
 
-        embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Skipped Song', description=player.current.title)
+        embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Track Skipped', description='**[{}]({})**'.format(player.current.title, player.current.uri))
         message = await ctx.send(embed=embed)
   
         await player.skip()
