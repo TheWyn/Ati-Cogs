@@ -255,10 +255,10 @@ class Music:
 
         if player.paused:
             await player.set_pause(False)
-            await self._embed_msg(ctx, 'Music resumed.')
+            await self._embed_msg(ctx, 'Resumed Song: {}...'.format(player.current.title))
         else:
             await player.set_pause(True)
-            await self._embed_msg(ctx, 'Music paused.')
+            await self._embed_msg(ctx, 'Paused Song: {}...'.format(player.current.title))
 
     @commands.command()
     async def percent(self, ctx):
@@ -570,6 +570,8 @@ class Music:
 
         if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, 'You must be in the voice channel to skip the music.')
+
+        self._embed_msg(ctx, 'Skipping Song: {}...'.format(player.current.title))
 
         await player.skip()
 
