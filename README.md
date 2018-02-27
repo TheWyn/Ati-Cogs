@@ -15,7 +15,7 @@ cowsay - Say it with a cow. Or think it with a cow.
 - `[p]repo add aticogs https://github.com/atiwiex/Ati-Cogs v3`
 - `[p]cog install aticogs music`
 
-- `pip install lavalink==2.0.2.4`
+- `pip install lavalink==2.0.2.9`
 
 - Install Java.
 - Get the latest Lavalink jar and server. https://ci.fredboat.com/viewLog.html?buildId=3005&tab=artifacts&buildTypeId=Lavalink_Build&guest=1
@@ -32,7 +32,7 @@ cowsay - Say it with a cow. Or think it with a cow.
 
 - Thank you for helping to test and give feedback!
 - Upgrade Red to the latest beta (beta 7+)
-- run `pip install -U lavalink==2.0.2.4`
+- run `pip install -U lavalink==2.0.2.9`
 - Replace your current Lavalink jar files: https://ci.fredboat.com/viewLog.html?buildId=3005&tab=artifacts&buildTypeId=Lavalink_Build&guest=1
 
 
