@@ -255,10 +255,12 @@ class Music:
 
         if player.paused:
             await player.set_pause(False)
-            await self._embed_msg(ctx, 'Resumed Song: {}...'.format(player.current.title))
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Resumed Song:', description=player.current.title)
+            message = await ctx.send(embed=embed)
         else:
             await player.set_pause(True)
-            await self._embed_msg(ctx, 'Paused Song: {}...'.format(player.current.title))
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Paused Song:', description=player.current.title)
+            message = await ctx.send(embed=embed)
 
     @commands.command()
     async def percent(self, ctx):
@@ -571,7 +573,9 @@ class Music:
         if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, 'You must be in the voice channel to skip the music.')
 
-        await self._embed_msg(ctx, 'Skipping Song: {}...'.format(player.current.title))
+        embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Skipped Song:', description=player.current.title)
+        message = await ctx.send(embed=embed)
+  
         await player.skip()
 
     @commands.command(aliases=['s'])
