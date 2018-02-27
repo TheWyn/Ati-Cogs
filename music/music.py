@@ -74,7 +74,7 @@ class Music:
             if c:
                 c = self.bot.get_channel(c)
                 if c:
-                    embed = discord.Embed(colour=c.guild.me.top_role.colour, title='Now Playing:', description='**[{}]({})**'.format(player.current.title, player.current.uri))
+                    embed = discord.Embed(colour=c.guild.me.top_role.colour, title='Now Playing', description='**[{}]({})**'.format(player.current.title, player.current.uri))
                     await c.send(embed=embed)
 
         if event == 'TrackStartEvent' and status:
@@ -255,11 +255,11 @@ class Music:
 
         if player.paused:
             await player.set_pause(False)
-            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Resumed Song:', description=player.current.title)
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Resumed Song', description=player.current.title)
             message = await ctx.send(embed=embed)
         else:
             await player.set_pause(True)
-            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Paused Song:', description=player.current.title)
+            embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Paused Song', description=player.current.title)
             message = await ctx.send(embed=embed)
 
     @commands.command()
@@ -573,7 +573,7 @@ class Music:
         if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, 'You must be in the voice channel to skip the music.')
 
-        embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Skipped Song:', description=player.current.title)
+        embed = discord.Embed(colour=ctx.guild.me.top_role.colour, title='Skipped Song', description=player.current.title)
         message = await ctx.send(embed=embed)
   
         await player.skip()
