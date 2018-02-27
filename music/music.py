@@ -74,7 +74,7 @@ class Music:
             if c:
                 c = self.bot.get_channel(c)
                 if c:
-                    embed = discord.Embed(colour=c.guild.me.top_role.colour, title='Now Playing', description='**[{}]({})**'.format(player.current.title, player.current.uri))
+                    embed = discord.Embed(colour=c.guild.me.top_role.colour, title='Now Playing:', description='**[{}]({})**'.format(player.current.title, player.current.uri))
                     await c.send(embed=embed)
 
         if event == 'TrackStartEvent' and status:
