@@ -571,8 +571,7 @@ class Music:
         if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             return await self._embed_msg(ctx, 'You must be in the voice channel to skip the music.')
 
-        self._embed_msg(ctx, 'Skipping Song: {}...'.format(player.current.title))
-
+        await self._embed_msg(ctx, 'Skipping Song: {}...'.format(player.current.title))
         await player.skip()
 
     @commands.command(aliases=['s'])
