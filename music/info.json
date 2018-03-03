@@ -4,6 +4,7 @@
 	],
 	"description": "A Red v3 music cog using Lavalink. You must install, configure, and start the Lavalink server for this cog to work.",
 	"short": "Lavalink music player",
+        "requirements": ["lavalink"]
 	"tags": [
 		"audio",
 		"music",
