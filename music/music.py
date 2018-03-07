@@ -70,7 +70,7 @@ class Music:
 
         if event == 'TrackStartEvent' and status:
             if playing_servers > 1:
-                await self.bot.change_presence(activity=discord.Activity(name='music in {} servers'.format(playing_servers)))
+                await self.bot.change_presence(activity=discord.Activity(name='music in {} servers'.format(playing_servers), type=discord.ActivityType.listening))
             else:
                 await self.bot.change_presence(activity=discord.Activity(name=get_single_title, type=discord.ActivityType.listening))
 
@@ -89,7 +89,7 @@ class Music:
             if playing_servers == 1:
                 await self.bot.change_presence(activity=discord.Activity(name=get_single_title, type=discord.ActivityType.listening))
             if playing_servers > 1:
-                await self.bot.change_presence(activity=discord.Activity(name='music in {} servers'.format(playing_servers)))
+                await self.bot.change_presence(activity=discord.Activity(name='music in {} servers'.format(playing_servers), type=discord.ActivityType.listening))
 
     @commands.group()
     @checks.is_owner()
