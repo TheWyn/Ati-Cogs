@@ -55,20 +55,14 @@ class WebStatistics:
         <div class="other-thing">
             {cog}
         </div>"""
-        tmp = ''
-        for cog in data['loaded_cogs']:
-            tmp += template.format(cog=cog)
-        return tmp
+        return ''.join(template.format(cog=cog) for cog in data['loaded_cogs'])
 
     async def _get_commands_html(self, data):
         template = """
         <div class="other-thing">
             {command}
         </div>"""
-        tmp = ''
-        for command in data:
-            tmp += template.format(command=command)
-        return tmp
+        return ''.join(template.format(command=command) for command in data)
 
     async def generate_body(self):
         data = self.bot.get_cog('Statistics').redapi_hook()
@@ -96,15 +90,32 @@ class WebStatistics:
         date_now = 'Page generated on {}'.format(datetime.datetime.utcnow())
         servers = await self._get_servers_html(data)
         loaded_cogs = await self._get_cogs_html(data)
-        body = web_template.format(
-                servers=servers, bot_avatar_icon_url=bot_avatar_icon_url, name=name,
-                owner=owner, uptime=uptime, total_servers=total_servers, user_count=user_count,
-                active_cogs=active_cogs, total_commands=total_commands, total_channels=total_channels,
-                text_channels=text_channels, voice_channels=voice_channels, messages_received=messages_received,
-                commands_run=commands_run, cpu_usage=cpu_usage, memory_usage=memory_usage,
-                memory_usage_mb=memory_usage_mb, created=created, date_now=date_now, loaded_cogs=loaded_cogs,
-                all_commands=all_commands, threads=threads, io_reads=io_reads, io_writes=io_writes)
-        return body
+        return web_template.format(
+            servers=servers,
+            bot_avatar_icon_url=bot_avatar_icon_url,
+            name=name,
+            owner=owner,
+            uptime=uptime,
+            total_servers=total_servers,
+            user_count=user_count,
+            active_cogs=active_cogs,
+            total_commands=total_commands,
+            total_channels=total_channels,
+            text_channels=text_channels,
+            voice_channels=voice_channels,
+            messages_received=messages_received,
+            commands_run=commands_run,
+            cpu_usage=cpu_usage,
+            memory_usage=memory_usage,
+            memory_usage_mb=memory_usage_mb,
+            created=created,
+            date_now=date_now,
+            loaded_cogs=loaded_cogs,
+            all_commands=all_commands,
+            threads=threads,
+            io_reads=io_reads,
+            io_writes=io_writes,
+        )
 
     async def make_webserver(self):
         async def page(request):
@@ -136,10 +147,9 @@ def check_folder():
 
 
 def check_file():
-    data = {}
-    data['server_port'] = 4545
     if not dataIO.is_valid_json('data/webstatistics/settings.json'):
         print('Creating settings.json...')
+        data = {'server_port': 4545}
         dataIO.save_json('data/webstatistics/settings.json', data)
 
 

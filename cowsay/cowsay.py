@@ -21,8 +21,7 @@ class CowSay:
         # Prevent escaping from the preformatted text block by adding a
         # zero-width space after each backtick in the input.
         text_sanitised = text.replace("`", "`\u200B")
-        text_boxed = '```txt\n{0}```'.format(text_sanitised)
-        return text_boxed
+        return '```txt\n{0}```'.format(text_sanitised)
 
     @commands.command()
     async def cowthink(self, *, message : str):
