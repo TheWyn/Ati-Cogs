@@ -20,23 +20,22 @@ class Statistics:
         self.bot = bot
 
     def redapi_hook(self, data=None):
-        if not data:
-            x = self.retrieve_statistics()
-            x['avatar'] = self.bot.user.avatar_url if self.bot.user.avatar else self.bot.user.default_avatar_url
-            x['uptime'] = self.get_bot_uptime(brief=False)
-            x['total_cogs'] = len(self.bot.cogs)
-            x['total_commands'] = len(self.bot.commands)
-            x['discord_version'] = str(discord.__version__)
-            x['id'] = self.bot.user.id
-            x['discriminator'] = self.bot.user.discriminator
-            x['created_at'] = self.bot.user.created_at.strftime('%B %d, %Y at %H:%M:%S')
-            x['loaded_cogs'] = [cog for cog in self.bot.cogs]
-            x['prefixes'] = self.bot.settings.prefixes
-            x['servers'] = [{'name': server.name, 'members': len(server.members), 'icon_url': server.icon_url} for server in self.bot.servers]
-            x['cogs'] = len(self.bot.cogs)
-            return x
-        else:
-            pass
+        if data:
+            return
+        x = self.retrieve_statistics()
+        x['avatar'] = self.bot.user.avatar_url if self.bot.user.avatar else self.bot.user.default_avatar_url
+        x['uptime'] = self.get_bot_uptime(brief=False)
+        x['total_cogs'] = len(self.bot.cogs)
+        x['total_commands'] = len(self.bot.commands)
+        x['discord_version'] = str(discord.__version__)
+        x['id'] = self.bot.user.id
+        x['discriminator'] = self.bot.user.discriminator
+        x['created_at'] = self.bot.user.created_at.strftime('%B %d, %Y at %H:%M:%S')
+        x['loaded_cogs'] = [cog for cog in self.bot.cogs]
+        x['prefixes'] = self.bot.settings.prefixes
+        x['servers'] = [{'name': server.name, 'members': len(server.members), 'icon_url': server.icon_url} for server in self.bot.servers]
+        x['cogs'] = len(self.bot.cogs)
+        return x
 
     @commands.command()
     async def stats(self):
@@ -129,13 +128,22 @@ class Statistics:
                 voice_channels += 1
         channels = text_channels + voice_channels
 
-        stats = {
-            'name': name, 'users': users, 'total_servers': servers, 'commands_run': commands_run,
-            'read_messages': read_messages, 'text_channels': text_channels,
-            'voice_channels': voice_channels, 'channels': channels,
-            'cpu_usage': cpu_usage, 'mem_v': mem_v, 'mem_v_mb': mem_v_mb, 'threads': threads,
-            'io_reads': io_reads, 'io_writes': io_writes}
-        return stats
+        return {
+            'name': name,
+            'users': users,
+            'total_servers': servers,
+            'commands_run': commands_run,
+            'read_messages': read_messages,
+            'text_channels': text_channels,
+            'voice_channels': voice_channels,
+            'channels': channels,
+            'cpu_usage': cpu_usage,
+            'mem_v': mem_v,
+            'mem_v_mb': mem_v_mb,
+            'threads': threads,
+            'io_reads': io_reads,
+            'io_writes': io_writes,
+        }
 
     def get_bot_uptime(self, *, brief=False):
         # Stolen from owner.py - Courtesy of Danny
@@ -165,20 +173,17 @@ def check_folder():
 
 
 def check_file():
-    data = {}
-    data['CHANNEL_ID'] = None
-    data['REFRESH_RATE'] = 5
     f = 'data/statistics/settings.json'
     if not dataIO.is_valid_json(f):
         print('Creating default settings.json...')
+        data = {'CHANNEL_ID': None, 'REFRESH_RATE': 5}
         dataIO.save_json(f, data)
 
 
 def setup(bot):
     if psutil is False:
         raise RuntimeError('psutil is not installed. Run `pip3 install psutil --upgrade` to use this cog.')
-    else:
-        check_folder()
-        check_file()
-        n = Statistics(bot)
-        bot.add_cog(n)
+    check_folder()
+    check_file()
+    n = Statistics(bot)
+    bot.add_cog(n)

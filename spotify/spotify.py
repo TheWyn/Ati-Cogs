@@ -18,8 +18,7 @@ class Spotify:
 
     async def _api_request(self, query):
         sp = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials(self.settings['client_id'], self.settings['client_secret']))
-        results = sp.search(query, limit=5, type='track')
-        return results
+        return sp.search(query, limit=5, type='track')
 
     async def escape(self, s):
         if s:
@@ -70,11 +69,9 @@ def check_folder():
 
 
 def check_file():
-    data = {}
-    data['client_id'] = None
-    data['client_secret'] = None
     if not dataIO.is_valid_json('data/spotify/settings.json'):
         print('Creating settings.json...')
+        data = {'client_id': None, 'client_secret': None}
         dataIO.save_json('data/spotify/settings.json', data)
 
 
