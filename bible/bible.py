@@ -29,10 +29,9 @@ class Scriptures:
         sPassage = passage.split(' ')
         while True:
             if ':' in sPassage[0]:
-                break 
-            else:
-                chapter.append(sPassage[0])
-                del sPassage[0]
+                break
+            chapter.append(sPassage[0])
+            del sPassage[0]
 
         chapter = ' '.join(chapter)
         passagesVerses = sPassage[0].split(':')
